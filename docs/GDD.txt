@@ -1,767 +1,825 @@
 DO YOU COPY?
 Game Design Document
-Status: Early Design
+Status: Refined Core Design
 Platform: PC-first
+Target Runtime: 25-35 minutes
 Genre: First-person radio operations horror / verification thriller
 
 
 1. HIGH CONCEPT
 
-Do You Copy? is a first-person radio-operations horror game in which the player works from a communications station and supports field agents operating remotely.
+Do You Copy? is a short first-person radio-operations horror game in which the player supports two field agents from a communications station.
 
-The player finds transmissions, cleans weak signals, identifies speakers, authenticates callers, interprets incomplete reports, and relays instructions.
+Every important interaction asks the same question:
 
-The central threat is not immediately visible. Something has entered the communications network and is learning how to imitate the people using it.
+IS THE PERSON ON THIS CHANNEL REALLY WHO THEY CLAIM TO BE?
 
-Eventually, hearing the correct voice is not enough.
+The player tunes into transmissions, checks the speaker against available evidence, optionally challenges them, then decides what instruction to send.
+
+Something in the communications network is learning how the field team speaks, what they know, and how they authenticate themselves.
+
+Eventually, the correct voice and the correct password are not enough.
 
 Core fantasy:
-"I am the person in the chair keeping people alive with incomplete information."
+"I am the person in the chair deciding which voice gets trusted."
+
+Target experience:
+A complete escalating scenario in roughly 30 minutes, not a campaign.
 
 
 2. DESIGN PILLARS
 
-2.1 Operate equipment, not menus
+2.1 TUNE -> VERIFY -> DECIDE
 
-The player's desk should feel like a real working station.
+The game has one repeated loop:
 
-Primary systems are represented through physical or diegetic equipment:
-- radio receiver
-- tuning controls
-- spectrum / waveform monitor
-- communications terminal
-- tactical map or field-status display
-- authentication documents
-- patching / routing equipment
-- printer or log output
+TUNE
+Find and clean the transmission.
 
-The PC version should not resemble a fullscreen mobile terminal.
+VERIFY
+Determine whether the speaker and message are credible.
 
-2.2 Identity is gameplay
+DECIDE
+Send an instruction or cut the route, then live with the consequence.
 
-The defining mechanic is deciding whether a transmission is genuine.
+Every major mechanic must strengthen one of these three verbs.
 
-A voice can sound correct while other evidence is wrong.
+If a feature creates a fourth parallel game, cut it.
 
-Useful evidence includes:
+2.2 Identity is the puzzle
+
+There are no generic brain-training puzzles.
+
+The puzzle is the caller.
+
+Evidence can include:
+- voice
 - callsign
-- expected frequency
-- current location
-- assigned mission
-- authentication challenge
-- previous transmissions
-- knowledge of recent events
-- verbal habits
-- contradictions between agents
+- assigned frequency
+- last known location
+- current task
+- authentication response
+- knowledge from previous calls
+- speech habits
+- contradictions with another agent
 
-No single check should always be definitive.
+No UI element gives a "real/fake" answer.
 
-2.3 Horror attacks established rules
+2.3 Establish rules, then corrupt them
 
-The game first teaches the player what normal communications look and sound like.
+The first minutes teach reliable procedures.
 
-The horror escalates by breaking those learned expectations:
-- wrong frequency
-- impossible timing
-- duplicate callsigns
-- valid but outdated authentication
-- voices appearing on disconnected channels
-- conflicting equipment readouts
-- messages that reference information they should not know
+The ghost becomes frightening by learning and breaking those procedures.
 
-The ghost should feel like it is learning.
+Progression:
+1. wrong or noisy information
+2. impossible information
+3. copied identity
+4. copied authentication
+5. station data itself becomes suspect
 
-2.4 Consequences instead of constant failure states
+2.4 Decisions change later calls
 
-Incorrect decisions should usually change the situation rather than immediately trigger a game-over screen.
+Wrong decisions should normally continue the game.
 
-Examples:
-- an agent takes the wrong route
-- an agent loses contact
-- an unsafe location is entered
-- a compromised relay remains active
-- a genuine transmission is ignored
-- a false transmission is trusted
+Consequences are heard later:
+- an agent reaches the wrong place
+- an agent misses a rendezvous
+- a route becomes unavailable
+- a genuine caller no longer trusts the operator
+- the ghost gains information or access
 
-Failure should create new problems and narrative consequences.
+Avoid frequent game-over states.
 
-2.5 Small, readable field simulation
+2.5 One room, few systems, strong reuse
 
-The game should simulate enough of the remote operation to make decisions matter, but not become a large strategy game.
+The room exists to make the operator fantasy physical.
 
-The player should track only a small number of:
-- field agents
-- locations
-- communication routes
-- active threats
-- unresolved requests
+Most content is:
+- scripted voice
+- changing screen data
+- changing paper information
+- state flags
+- audio
+- lighting
 
-Complexity should come from uncertainty, not from dozens of resources or units.
+Do not create new environments to create new content.
 
 
 3. PLAYER ROLE
 
-The player is a communications operator assigned to support a small field team designated ECHO.
+The player is the communications operator for field team ECHO.
 
-The player remains physically separated from the primary danger.
+The field team consists of:
 
-Their responsibilities include:
-- locating active transmissions
-- keeping channels stable
-- verifying speakers
-- recording reports
-- interpreting incomplete information
-- warning agents about contradictions
-- issuing or relaying limited operational instructions
-- routing communications through available infrastructure
-- isolating compromised channels when necessary
+ECHO-ACTUAL
+The disciplined team lead.
 
-The player is not a combatant.
+ECHO-2
+A less formal second agent whose speech is easier to recognize.
 
-The player's power comes from information.
+The player never joins them physically.
 
+The operator can:
+- tune a frequency
+- clean a signal
+- inspect current records
+- ask for authentication
+- request a repeat
+- tell an agent to HOLD
+- tell an agent to PROCEED
+- redirect an agent to one of a few known locations
+- quarantine a channel
 
-4. CORE GAMEPLAY LOOP
-
-Primary loop:
-
-DETECT
--> ACQUIRE
--> CLEAN
--> IDENTIFY
--> INTERPRET
--> DECIDE
--> TRANSMIT
--> OBSERVE CONSEQUENCE
-
-4.1 Detect
-
-Signals are not always presented as obvious mission markers.
-
-The player notices:
-- spectrum peaks
-- changes in static
-- repeated bursts
-- known frequencies becoming active
-- signal-strength changes
-- audio fragments
-
-Multiple signals may eventually compete for attention.
-
-4.2 Acquire
-
-The player selects a receiver and tunes into a signal.
-
-Controls should feel tactile and fast rather than artificially difficult.
-
-Possible controls:
-- coarse tuning
-- fine tuning
-- gain
-- squelch
-- bandwidth
-- notch filter
-- antenna / source selection
-
-Not every transmission should require every control.
-
-4.3 Clean
-
-Signal processing should have understandable cause and effect.
-
-Examples:
-- gain improves weak audio but raises noise
-- squelch removes low-level static but may clip quiet speech
-- narrow bandwidth isolates a transmission but can damage intelligibility
-- notch filtering removes a persistent tone
-- fine tuning corrects frequency drift
-
-Experienced players should eventually diagnose problems partly by ear.
-
-4.4 Identify
-
-The player determines who is speaking.
-
-A caller may claim:
-"This is ECHO-2."
-
-That claim is only one piece of evidence.
-
-The player may cross-check:
-- expected channel
-- current location
-- mission assignment
-- latest status report
-- challenge-response code
-- recent shared knowledge
-
-4.5 Challenge
-
-The player can request authentication.
-
-Example:
-
-OPERATOR:
-"ECHO-2, authenticate Foxtrot-Seven."
-
-The response may be:
-- correct
-- incorrect
-- correct but obsolete
-- delayed
-- suspiciously perfect
-- inconsistent with previous knowledge
-
-Authentication should become less reliable as the ghost learns.
-
-4.6 Interpret
-
-The player interprets the practical meaning of the report.
-
-Avoid abstract puzzle-game exercises unless they exist naturally in the fiction.
-
-Good examples:
-- reconstructing damaged coordinates
-- identifying which route an agent means
-- comparing two contradictory reports
-- recognizing that a caller could not know a recent event
-- decoding a short operational cipher
-- checking a challenge-response sheet
-- resolving an ambiguous field description
-
-Bad default examples:
-- arbitrary number sequences
-- generic brain-training logic questions
-- unrelated Caesar/Vigenere exercises
-- memory minigames with no operational meaning
-
-4.7 Decide
-
-Possible decisions include:
-- trust transmission
-- reject transmission
-- request repeat
-- request authentication
-- tell agent to hold
-- authorize movement
-- reroute agent
-- isolate relay
-- quarantine / burn channel
-- prioritize one transmission over another
-
-4.8 Consequence
-
-Agents and locations change state.
-
-The player should often hear the result through later transmissions rather than through explicit score popups.
+That is the complete gameplay vocabulary for the 30-minute version.
 
 
-5. IDENTITY VERIFICATION SYSTEM
+4. CORE LOOP
 
-Identity verification is the core systemic puzzle.
+A normal contact should take roughly 45-120 seconds.
 
-Each agent has a small, memorable profile.
+4.1 TUNE
 
-Example:
+A signal appears on the spectrum display and in the radio audio.
 
-CALLSIGN:
+The player:
+- turns the frequency dial
+- uses fine tune if necessary
+- adjusts one signal-quality control
+
+For the initial version, use only:
+
+FREQUENCY
+Find the carrier.
+
+SQUELCH OR GAIN
+Make the voice intelligible.
+
+Do not ship a full radio simulator with gain, squelch, bandwidth, notch, AGC, antenna selection, and multiple receiver banks.
+
+The interaction must become fast once learned.
+
+Target:
+A practiced player acquires a normal signal in 5-10 seconds.
+
+Tuning exists to make receiving a call tactile. It is not the main puzzle.
+
+4.2 VERIFY
+
+After acquisition, the player hears the report.
+
+The workstation provides only the evidence needed to judge it:
+
+SCREEN
+- active frequency
+- claimed callsign
+- last verified location
+- current objective
+- recent communication log
+
+PAPER
+- authentication challenge sheet
+- small frequency / assignment reference
+
+MAP
+- three or four field locations
+- last confirmed position of each agent
+
+The player can request:
+
+REPEAT
+Replay or repeat the key report.
+
+AUTHENTICATE
+Issue the current challenge.
+
+The response becomes another piece of evidence, not proof.
+
+The player is expected to remember some recent context, but the communication log should prevent the game from becoming a memory test.
+
+4.3 DECIDE
+
+The player gives one operational response.
+
+Primary actions:
+
+HOLD
+Do not move. Await further verification.
+
+PROCEED
+Follow the requested/current route.
+
+REROUTE
+Select one alternate known location.
+
+QUARANTINE CHANNEL
+Permanently block the current route.
+
+Do not use a generic TRUST / FAKE button.
+
+The decision should be framed as something an operator would actually tell the field team.
+
+4.4 CONSEQUENCE
+
+The field simulation is a small state machine, not a strategy layer.
+
+Track only:
+- ECHO-ACTUAL location/status
+- ECHO-2 location/status
+- which channels are available
+- which transmissions the ghost has overheard
+- a few scenario flags
+
+Consequences should reappear as future calls.
+
+
+5. WORKSTATION AND GAMEPLAY LOCATIONS
+
+The room is a compact communications room built in Blender.
+
+Only a few objects need full interaction.
+
+5.1 RADIO RECEIVER
+
+Primary interaction:
+- frequency dial
+- one cleanup control
+- channel indicator
+
+Used in every contact.
+
+5.2 SPECTRUM DISPLAY
+
+Programmatically rendered.
+
+Purpose:
+- shows active carriers
+- helps find frequencies
+- later shows suspicious duplicate/impossible signals
+
+The spectrum display should be readable at a glance.
+
+5.3 TERMINAL
+
+Programmatically rendered.
+
+Contains:
+- current contact
+- callsign records
+- last verified location
+- recent communication log
+- simple status updates
+
+Do not build a large fake operating system.
+
+5.4 PAPER REFERENCE
+
+Physical authentication sheet and frequency list.
+
+This gives the player one source of information that is separate from the computer.
+
+Late in the game, disagreement between paper and terminal can matter.
+
+5.5 FIELD MAP
+
+Keep it extremely small:
+- 3-4 named locations
+- two agent markers
+- route lines
+
+The map is reference material, not a strategy minigame.
+
+5.6 MICROPHONE / PUSH-TO-TALK
+
+Used when sending the selected response.
+
+The hand moving to the microphone gives the final decision physical weight.
+
+5.7 CHANNEL QUARANTINE CONTROL
+
+A protected switch/button used only after the mechanic is introduced.
+
+It should look more consequential than ordinary controls.
+
+5.8 NON-CORE PROPS
+
+Printer, patch board, door, shelves, filing cabinets, lights, and room clutter may exist visually.
+
+They do not need gameplay unless a scripted moment specifically requires them.
+
+Do not turn every prop into a system.
+
+
+6. IDENTITY VERIFICATION
+
+Each agent has a compact identity model the player can actually learn within 30 minutes.
+
+ECHO-ACTUAL
+
+Traits:
+- concise
+- follows procedure
+- expects read-back
+- rarely uses contractions
+- uses "Operator" before direct requests
+
 ECHO-2
 
-EXPECTED CHANNEL:
-104.7 MHz
+Traits:
+- conversational
+- occasionally jokes
+- abbreviates locations
+- sometimes talks before formally identifying himself
 
-LAST VERIFIED LOCATION:
-North Service Corridor
+Verification evidence:
 
-CURRENT TASK:
-Reach Relay B
+STATIC FACTS
+- callsign
+- primary frequency
+- role
 
-AUTHENTICATION:
-Challenge Delta-4
-Expected response: "MERCURY"
+CURRENT FACTS
+- last verified location
+- current task
+- latest route change
 
-KNOWN CONTEXT:
-ECHO-ACTUAL redirected ECHO-2 away from the blue-marked door.
+AUTHENTICATION
+- current challenge-response
 
-BEHAVIOR:
-Usually repeats coordinates back before moving.
+BEHAVIOR
+- speech habits
+- protocol habits
 
-A suspicious transmission may match most of these while failing one.
-
-The game should avoid binary "real/fake" UI indicators.
-
-The player should make the judgment.
-
-
-6. RIDDLES AND CHALLENGE-RESPONSE
-
-The jam's riddle requirement can remain because it fits the design naturally.
-
-Riddles should function as authentication challenges rather than disconnected puzzle rooms.
-
-Possible forms:
-- short verbal riddles
-- code phrases
-- procedural questions
-- context-specific questions
-- answers based on printed field information
-- questions whose answer changed during the current operation
-
-Early game:
-Authentication is reliable and bureaucratic.
-
-Mid game:
-The ghost obtains old challenge answers.
-
-Late game:
-The ghost learns from previously overheard authentication.
-
-Eventually, context and behavior become more trustworthy than a static code sheet.
+The ghost's progression is the gradual acquisition of these categories.
 
 Important rule:
-The player should learn that authentication proves access to information, not identity.
+Authentication proves that the caller knows an answer. It does not prove identity.
 
 
-7. SACRIFICE MECHANIC
+7. AUTHENTICATION / RIDDLES
 
-The sacrifice modifier can also remain because it creates meaningful irreversible decisions.
+Retain riddles only as challenge-response authentication.
 
-Primary form:
-BURN / QUARANTINE CHANNEL
+A challenge should take seconds, not minutes.
 
-Burning a channel:
-- permanently disables that communication route
-- immediately stops transmissions using it
-- may prevent the ghost from continuing to exploit the route
-- may also cut off a real agent
-- cannot be undone during the current run
+Example:
 
-Larger late-game sacrifices may include:
-- disconnect relay
-- shut down receiver bank
-- destroy authentication database
-- cut power to one subsystem
-- abandon a field route
+CHALLENGE DELTA-4
+"What has keys but opens no locks?"
 
-The player should rarely be completely certain before making a sacrifice.
+EXPECTED:
+KEYBOARD
 
-The cost must be real.
+The player reads the challenge aloud through a button/action.
+The caller responds.
+The player compares the answer with the sheet.
+
+Use approximately 4-6 challenge pairs in the whole game.
+
+Progression:
+
+EARLY
+Real agents answer correctly. False/noisy calls fail.
+
+MIDDLE
+A suspicious caller provides an obsolete but once-valid answer.
+
+LATE
+The ghost provides the current correct answer because it heard the challenge used earlier.
+
+FINAL
+Authentication is no longer sufficient; context and contradiction matter more.
 
 
-8. FIELD TEAM
+8. QUARANTINE / SACRIFICE
 
-Keep the cast small.
+The irreversible sacrifice mechanic is:
 
-8.1 ECHO-ACTUAL
+QUARANTINE CHANNEL
 
-Role:
-Field leader and primary relationship with the player.
+When used:
+- the current frequency/route is permanently blocked at the station
+- all future transmissions assigned to that route are lost
+- the ghost cannot use that route again
+- a real agent may lose their primary contact path
 
-Traits:
-- disciplined
-- concise
-- experienced
-- initially treats the player as an inexperienced desk operator
-- becomes more dependent on the operator as communications degrade
+Each agent has only limited communication redundancy.
 
-Useful verification behavior:
-- follows radio procedure carefully
-- expects read-backs
-- rarely wastes words
+Therefore quarantining a channel is not a "kill fake caller" button.
 
-8.2 ECHO-2
+It trades uncertainty now for reduced communication options later.
 
-Role:
-Secondary field agent.
+For the 30-minute scenario, allow at most 2 meaningful quarantine opportunities.
 
-Traits:
-- less formal
-- more conversational
-- easier to recognize by speech habits
-- more likely to improvise
-
-This makes impersonation interesting:
-The ghost may copy the voice before it learns the personality.
-
-8.3 Optional third agent
-
-Only add ECHO-3 if the scenario benefits materially.
-
-Possible role:
-Technical specialist responsible for relays, power, or recovered equipment.
-
-Do not expand the cast merely to create more content.
+Do not add separate sacrifice systems such as destroying databases, cutting power, abandoning routes, and disabling receiver banks. One irreversible mechanic is enough.
 
 
 9. THE GHOST
 
-The ghost should not have an obvious monster voice.
+The ghost should initially sound exactly like ordinary radio trouble.
 
-It uses the same communications system as everyone else.
+Do not use an obvious demon filter.
 
-Progression:
+Its progression during the scenario:
 
-9.1 Stage One: Interference
-
-Symptoms:
-- drift
+STAGE 1 - NOISE
 - crosstalk
-- unexpected tones
-- malformed identifiers
-- small timing errors
+- drift
+- partial identifier
+- plausible equipment fault
 
-Everything remains technically explainable.
+STAGE 2 - CONTRADICTION
+- wrong location with correct voice
+- information an agent should not yet know
+- impossible timing
 
-9.2 Stage Two: Impossible Information
+STAGE 3 - COPY
+- exact agent voice
+- correct callsign
+- believable report
+- one contextual mistake
 
-Examples:
-- a transmission describes an event before it occurs
-- a caller knows information they were never told
-- a disconnected relay responds
-- two reports conflict in impossible ways
+STAGE 4 - LEARNING
+- correct current authentication
+- copied speech habit
+- knowledge acquired from earlier open transmissions
 
-9.3 Stage Three: Impersonation
+STAGE 5 - MACHINE
+- terminal record changes
+- spectrum shows a carrier on a quarantined channel
+- paper and digital records disagree
+- a transmission appears to originate from the station itself
 
-The ghost reproduces:
-- voice
-- callsign
-- expected frequency
-- partial operational knowledge
-
-The player must rely on multiple pieces of evidence.
-
-9.4 Stage Four: Learning
-
-The ghost adapts.
-
-Examples:
-- uses answers from earlier authentication challenges
-- imitates speech habits
-- references recent events
-- exploits procedures the player has repeatedly trusted
-
-9.5 Stage Five: Machine Intrusion
-
-The station itself becomes unreliable.
-
-Examples:
-- terminal and analog meter disagree
-- a channel identifies itself incorrectly
-- printer outputs unsolicited information
-- disconnected speaker emits speech
-- route map changes without operator input
-- frequency display shows impossible values
-
-The player must decide which instruments still deserve trust.
+Do not escalate primarily through visual jumpscares.
+Escalate by making previously reliable evidence unreliable.
 
 
-10. SETTING AND ENVIRONMENT
+10. 30-MINUTE SCENARIO
 
-The game takes place primarily in one communications room.
+The game should be written around approximately 8 major contacts.
 
-Unlike the earlier jam-specific version, the setting is not constrained to be "unfit for horror."
+The exact timing can flex, but the function of each contact should remain clear.
 
-It can be remote, institutional, functional, or mildly unsettling from the beginning.
+00:00-03:00 - TRAINING CONTACT
 
-The room should still avoid excessive horror decoration.
+ECHO-ACTUAL performs a routine radio check.
 
-Preferred qualities:
-- believable operational space
-- readable equipment layout
-- limited size
-- strong silhouette
-- inexpensive to model
-- visually distinctive through lighting and equipment rather than asset density
+Player learns:
+- tune
+- clean
+- read screen
+- authenticate
+- PROCEED
 
-The room is modeled in Blender.
+Nothing threatening happens.
 
-Visual style:
+Purpose:
+Teach the complete loop immediately.
+
+03:00-06:00 - NORMAL ECHO-2
+
+ECHO-2 reports from Location A.
+
+Player uses the map and sends HOLD or PROCEED.
+
+Establish ECHO-2's less formal speech.
+
+Purpose:
+Teach personality as evidence.
+
+06:00-09:00 - FIRST DISCREPANCY
+
+A weak call claims to be ECHO-2.
+
+One fact is wrong:
+- frequency
+OR
+- location
+OR
+- authentication response
+
+The correct choice should be discoverable.
+
+Purpose:
+Teach that identity verification matters.
+
+09:00-13:00 - CONSEQUENCE / ROUTE DECISION
+
+The genuine agents report the result.
+
+Player must route one agent between two locations using conflicting but still plausible information.
+
+Purpose:
+Show that operator decisions affect the field situation.
+
+13:00-17:00 - DUPLICATE VOICE
+
+Two transmissions claim to be ECHO-ACTUAL.
+
+Both use the correct voice.
+
+One passes static checks but contradicts recent context.
+
+Purpose:
+Reveal the central horror mechanic.
+
+17:00-21:00 - OBSOLETE AUTHENTICATION
+
+A suspicious transmission answers an authentication challenge with a valid answer from an older sheet or earlier call.
+
+Purpose:
+Break the player's belief that authentication is definitive.
+
+Introduce QUARANTINE CHANNEL after this contact.
+
+21:00-26:00 - LEARNED COPY
+
+The ghost now:
+- uses the correct voice
+- uses the current frequency
+- answers the current challenge
+- imitates one speech habit
+
+The player must identify it through contextual contradiction or through comparison with the other agent.
+
+This is the hardest normal verification event.
+
+26:00-30:00 - FINAL CONTACT
+
+The communications picture collapses.
+
+At least one trusted source is contradicted:
+- terminal vs paper
+- map vs agent report
+- quarantined route vs live carrier
+
+The player must make one final operational decision:
+- trust one agent
+- hold/sever communication
+- quarantine the remaining suspicious route
+
+The ending is determined by accumulated decisions and surviving contact paths.
+
+The finale should be playable, not a dialogue choice detached from the preceding mechanics.
+
+
+11. BRANCHING AND ENDINGS
+
+Keep branching shallow enough to author and test.
+
+Each major decision should set flags that alter later dialogue and availability.
+
+Do not create a fully branching narrative tree.
+
+Recommended model:
+A mostly shared sequence with conditional lines and state.
+
+Track:
+- ECHO-ACTUAL reachable: yes/no
+- ECHO-2 reachable: yes/no
+- ECHO-ACTUAL trusted at key moment: yes/no
+- ECHO-2 trusted at key moment: yes/no
+- channel A quarantined: yes/no
+- channel B quarantined: yes/no
+- ghost access level: low/high
+
+Possible outcome families:
+
+CONTAINED
+The operator preserves enough genuine communication while isolating the ghost.
+
+ISOLATED
+The operator stops the ghost but loses contact with one or both agents.
+
+OPEN LINE
+The operator trusts the imitation at a critical moment and leaves a route open.
+
+Do not build more than 3 ending families for the first version.
+
+
+12. ROOM AND VISUAL DIRECTION
+
+The room can be remote, institutional, functional, and mildly unsettling.
+
+It does not need to satisfy the discarded "setting not fit for horror" constraint.
+
+Production goals:
 - simple geometry
-- restrained material palette
-- basic colors
-- functional props
-- readable knobs and switches
-- CRT / terminal graphics generated in code
-- minimal clutter
+- basic materials/colors
+- limited asset count
+- readable workstation silhouette
+- strong lighting
+- CRT/terminal graphics generated in code
+- almost no decorative modeling that does not improve framing
 
-The player does not need free exploration of a large environment.
+Player movement:
+Seated or tightly constrained around the desk.
+
+The player should be able to look between:
+- radio
+- main display
+- terminal
+- paper
+- map
+- microphone
+- quarantine control
+
+These objects form the game's physical navigation loop.
 
 
-11. PLAYER BODY AND INTERACTION
+13. PLAYER BODY AND INPUT
 
-The player can remain seated or tightly constrained to the workstation.
+Use one rigged arm.
 
-One rigged arm is sufficient.
+Arm interactions worth animating:
+- turn main radio dial
+- adjust cleanup control
+- press authentication / response controls
+- move to push-to-talk microphone
+- activate quarantine switch
 
-Use the arm for:
-- turning knobs
-- pressing buttons
-- operating switches
-- picking up a document
-- interacting with the terminal
-- handling the radio / push-to-talk control
+Do not animate bespoke hand motions for every desk prop.
 
-Avoid building a full first-person body unless required later.
-
-PC-first controls:
+Controls:
 
 MOUSE
-Look and interact.
+Look.
 
 LEFT MOUSE
-Use focused control.
-
-DRAG
-Rotate knobs or move sliders.
+Interact / drag focused control.
 
 MOUSE WHEEL
-Fine adjustment for focused controls.
+Fine tune radio.
 
 KEYBOARD
-Type terminal input / shortcuts.
+Terminal shortcuts if useful.
 
-PUSH-TO-TALK KEY
-Transmit or confirm radio response.
+PUSH-TO-TALK / CONFIRM KEY
+Send selected operational response.
 
-Repeated tasks should become faster as the player learns the workstation.
-
-
-12. VISUAL INTERFACE
-
-The entire screen should not use a global CRT shader.
-
-CRT effects belong to CRT displays.
-
-The physical room should remain visually separate from the displays.
-
-Main display functions:
-- spectrum
-- waveform
-- active frequency
-- signal strength
-- channel state
-- terminal/log output
-- field status
-
-Programmatic rendering should handle most screen content.
-
-Diegetic presentation is preferred over floating HUD elements.
+The player should feel faster at the station after five minutes of play.
 
 
-13. AUDIO
+14. AUDIO
 
-Audio is a primary gameplay system.
+Audio is a primary gameplay channel.
 
-Each important transmission should be recognizable by:
-- voice
-- radio processing
-- signal quality
-- channel characteristics
-- environmental interference
+Each agent requires:
+- stable voice identity
+- clear speech habits
+- consistent radio treatment
 
-TTS can be used for authored dialogue.
+TTS is acceptable for authored lines if the result is intelligible and consistent.
 
-Recommended pipeline:
+Suggested processing:
 
 VOICE
--> EQ / band limiting
+-> band limiting
 -> compression
 -> light saturation
--> radio noise
+-> static/noise
 -> signal-strength degradation
 -> occasional dropout
 
-Each agent should have:
-- stable voice profile
-- consistent pacing
-- pronunciation setup
-- recognizable speech habits
+Signal degradation must never make required evidence unfairly unintelligible.
 
-The ghost should initially use the same voice identity and processing as the copied agent.
+If a critical word is obscured, the player must be able to request REPEAT.
 
-Avoid immediately revealing fake callers through supernatural voice effects.
+The ghost should use the copied agent's normal voice treatment.
+
+Do not reveal identity through horror effects.
 
 
-14. NARRATIVE STRUCTURE
+15. CONTENT BUDGET
 
-Proposed campaign structure:
+Target content for the complete 30-minute version:
 
-14.1 Training
+ROOM
+- 1 environment
 
-Teach:
-- frequency tuning
-- signal cleaning
-- authentication
-- basic field instructions
+CHARACTERS
+- 2 field-agent voices
+- 1 ghost using copied voices
 
-One small anomaly can appear without explanation.
+LOCATIONS
+- 3-4 field locations
 
-14.2 Routine operation
+CONTACTS
+- approximately 8 major contacts
+- a few short incidental/static events
 
-The player supports ECHO in a real mission.
+AUTHENTICATION
+- 4-6 challenge-response pairs
 
-Establish normal communication patterns.
+PLAYER DECISIONS
+- approximately 5 consequential decisions
+- 1-2 quarantine opportunities
 
-14.3 Contradiction
+ENDINGS
+- 3 outcome families
 
-Unauthorized or impossible signals begin appearing.
+INTERACTIVE OBJECTS
+- radio
+- spectrum display
+- terminal
+- papers
+- map
+- microphone/PTT
+- quarantine control
 
-First duplicated or contradictory identity.
-
-14.4 Impersonation
-
-The player must actively distinguish genuine agents from copied transmissions.
-
-Authentication becomes unreliable.
-
-14.5 Containment
-
-Communications infrastructure itself becomes part of the threat.
-
-The player makes irreversible sacrifice decisions.
-
-14.6 Finale
-
-The final available actions depend on:
-- which agents remain reachable
-- which channels were burned
-- which relays remain connected
-- what information was trusted
-- what was recovered
-- how much access the ghost gained
-
-Avoid reducing the finale to a single explicit "accept/refuse" choice.
+Anything beyond this budget requires replacing something else.
 
 
-15. EXAMPLE ENCOUNTER
+16. DEVELOPMENT PRIORITIES
 
-ECHO-2 transmits:
+P0 - 5-MINUTE PROTOTYPE
 
-"Operator, reached the east service room. Blue indicator above the door. Actual said proceed. Confirm."
-
-Before the player replies, another channel opens.
-
-ECHO-ACTUAL:
-
-"Do not let Two enter anything marked blue. We found the same marking upstairs."
-
-A third channel activates.
-
-It is also ECHO-ACTUAL.
-
-"Ignore previous. Two is clear to proceed."
-
-The second ECHO-ACTUAL:
-- has the correct voice
-- knows the correct callsign
-- knows ECHO-2's location
-- uses an assigned frequency
-
-The player requests authentication.
-
-The caller provides the correct response.
-
-But it is the response from the previous authentication sheet.
-
-The player may:
-- trust the first ECHO-ACTUAL
-- trust the second
-- tell ECHO-2 to hold
-- request another contextual verification
-- burn the suspicious channel
-
-The decision changes what happens later.
-
-
-16. SCOPE CONTROL
-
-The game should remain achievable by keeping content small and systemic.
-
-For the first playable version:
-
-- one communications room
-- one player arm
-- one radio station
-- one primary display
-- two field agents
-- one ghost / imitator
-- limited set of locations
-- scripted transmission sequence
-- authentication system
-- small field-state model
-- one irreversible sacrifice mechanic
-- several meaningful consequences
-- 2-3 endings or outcome states
-
-Avoid:
-- open-world exploration
-- combat
-- large NPC simulation
-- procedural campaign generation
-- many environments
-- elaborate character animation
-- giant inventory systems
-- free-form AI dialogue
-- dozens of radio stations
-
-
-17. DEVELOPMENT PRIORITIES
-
-P0 - PROVE THE CORE LOOP
-
-Implement:
-- one room
-- interaction
+Build:
+- room blockout
 - radio tuning
-- signal cleanup
-- one real caller
-- one fake caller
-- authentication
-- accept/reject decision
-- consequence
+- one cleanup control
+- spectrum display
+- one ECHO-ACTUAL voice
+- authentication sheet
+- HOLD / PROCEED
+- consequence line
 
-If this sequence is not compelling, do not build more content.
+Success criterion:
+The full Tune -> Verify -> Decide loop is understandable without explanation after one guided contact.
 
-P1 - BUILD THE HORROR SYSTEM
-
-Add:
-- duplicate identity
-- outdated authentication
-- contradictory information
-- channel anomalies
-- ghost learning
-- one irreversible sacrifice
-
-P2 - BUILD THE SCENARIO
+P1 - 10-MINUTE HORROR SLICE
 
 Add:
-- complete transmission script
-- field-state transitions
-- escalating audio
-- environmental changes
-- endings
+- ECHO-2
+- first false transmission
+- contextual contradiction
+- communication log
+- duplicate voice
+
+Success criterion:
+The player can identify a fake using evidence rather than guessing from audio effects.
+
+P2 - COMPLETE 30-MINUTE SCRIPT
+
+Add:
+- all 8 contacts
+- quarantine mechanic
+- branch flags
+- final contact
+- 3 ending families
 
 P3 - POLISH
 
-Focus on:
-- radio audio quality
-- interaction feedback
-- readable screen rendering
+Prioritize:
+- voice clarity
+- radio feel
+- interaction speed
+- readable screens
 - lighting
-- timing
-- performance
+- pacing
+- save/restart flow
 - build stability
+
+Do not spend polish time on non-interactive room clutter before the full scenario is playable.
+
+
+17. CUT LIST
+
+Cut from the current scope unless the core game proves it needs them:
+
+- third field agent
+- multiple receiver banks
+- full radio simulation
+- patch-panel minigame
+- router puzzle
+- resource economy
+- security/threat percentages
+- procedural signal generation
+- generic cipher puzzles
+- complex tactical map
+- free exploration
+- inventory
+- combat
+- dynamic AI dialogue
+- large branching narrative tree
+- high scores
+
+These are expansion ideas, not requirements for Do You Copy?'s core experience.
 
 
 18. DESIGN RULES
 
-- The radio work must be interesting before the horror starts.
-- The player should infer identity from evidence.
-- Do not expose a "fake caller probability."
-- Wrong decisions should usually continue the story.
-- The ghost learns rules before breaking them.
+- Every contact must end in a decision or meaningful discovery.
+- Tuning should take seconds, not become busywork.
+- Identity is inferred from evidence.
+- Never show a fake-caller probability.
 - Authentication proves knowledge, not identity.
-- Use ambiguity rather than constant jumpscares.
-- Keep the field simulation small.
-- Prefer systemic reuse over additional content.
-- Every major mechanic must create a decision, not merely occupy the player's hands.
+- The ghost learns before it breaks a rule.
+- Wrong decisions should usually continue the story.
+- Consequences should return through later calls.
+- The communication log prevents accidental memory-test difficulty.
+- Keep only two agents until the complete scenario works.
+- Use one sacrifice mechanic.
+- Reuse the same workstation in progressively less trustworthy ways.
+- The final decision must use skills taught in the first five minutes.
+- If a mechanic cannot pay off within 30 minutes, remove it.
