@@ -1,113 +1,81 @@
 DO YOU COPY?
 Technical Design and Architecture
 Status: Initial Technical Specification
-Platform: PC-first
+Platform: PC
 Engine: Godot 4.7
 Language: GDScript
 
 
-1. TECHNICAL GOALS
+1. PURPOSE
 
-The technical design must support a 25-35 minute authored first-person radio horror scenario with minimal implementation risk.
+This document defines the technical structure for Do You Copy?.
 
-Primary goals:
+The game is a 25-35 minute first-person radio horror scenario.
+
+Technical priorities:
 - fast iteration
-- clear ownership boundaries
-- easy debugging of scripted progression
-- minimal runtime dependencies
-- simple Blender -> Godot asset workflow
-- programmatic diegetic screens
-- reliable authored voice playback
+- clear ownership
+- simple debugging
+- few runtime dependencies
+- reliable scripted progression
+- stable voice playback
 - deterministic branching
-- automated tests for scenario soft-locks
+- automated tests for scenario failures
 
-The project should not introduce architecture intended for a large game.
-
-Avoid:
-- ECS
-- dependency injection
-- generic service layers
-- gameplay singleton managers
-- behavior trees
-- generic quest frameworks
-- generic inventory systems
-- runtime AI dialogue
-- runtime neural TTS
-- custom DSP unless Godot built-ins prove insufficient
+Do not add architecture for a large game.
 
 
-2. ENGINE AND LANGUAGE
+2. TECHNOLOGY STACK
 
-Engine:
+ENGINE
 Godot 4.7
 
-Language:
+LANGUAGE
 GDScript
 
-Renderer:
+RENDERER
 Forward+
 
-3D asset workflow:
+3D WORKFLOW
 Blender -> glTF / GLB -> Godot
 
-Reasons:
-- fast scene iteration
-- strong built-in 3D workflow
-- native SubViewport / ViewportTexture support for diegetic monitors
-- built-in audio buses and effects
-- editor-friendly Resources
-- signals and scene composition fit the project's ownership model
-- GDScript minimizes iteration overhead for a one-room game
+Use Godot built-in systems before you add a dependency.
 
 
 3. THIRD-PARTY ADDONS
 
-Use only addons that replace substantial infrastructure.
+Use only addons that replace important infrastructure.
 
 3.1 Dialogue Manager
 
-Purpose:
+Use Dialogue Manager for:
 - authored radio dialogue
-- branching lines
-- conditions and mutations
-- static dialogue line IDs
-- manually advancing dialogue without traditional dialogue balloons
+- conditional dialogue
+- dialogue mutations
+- static line IDs
+- manual dialogue progression
 
-Use it for:
-- ECHO-ACTUAL lines
-- ECHO-2 lines
-- copied ghost lines
-- conditional responses
-- ending dialogue
-- line ID -> authored voice asset association
+Do not use a standard dialogue balloon as the main presentation.
 
-Do not use its UI as the primary presentation layer.
-
-Dialogue is presented through:
+Present dialogue through:
 - radio audio
-- terminal logs
-- screen state
-- physical interaction
+- terminal log
+- workstation state
 
-Dialogue Manager owns:
-WHAT IS SAID.
+Dialogue Manager owns dialogue content.
 
-It does not own:
+Dialogue Manager does not own:
 - radio tuning
-- contact state
-- agent location
+- scenario state
 - channel quarantine
-- interaction mechanics
+- player interaction
+- field state
 
 3.2 Godot State Charts
 
-Purpose:
-- explicit contact lifecycle
-- scenario/gameplay phase transitions
-- visual debugging
-- preventing boolean-state sprawl
+Use Godot State Charts for the contact lifecycle.
 
-Primary contact state flow:
+Primary states:
 
 WAITING
 -> TUNING
@@ -117,7 +85,9 @@ WAITING
 -> RESOLVING
 -> COMPLETE
 
-Useful events:
+Use explicit events for transitions.
+
+Examples:
 - contact_started
 - signal_acquired
 - opening_voice_finished
@@ -127,125 +97,36 @@ Useful events:
 - decision_made
 - resolution_finished
 
-State Charts owns:
-WHERE THE CURRENT INTERACTION IS.
+State Charts owns the current interaction state.
 
-It does not own:
-- persistent scenario data
+State Charts does not own:
+- persistent run data
 - dialogue content
 - radio implementation
 
 3.3 GdUnit4
 
-Purpose:
-- automated scenario tests
-- branch validation
-- state-transition validation
-- regression protection against soft-locks
+Use GdUnit4 for scenario tests.
 
 Test:
-- all major contacts are reachable
-- all decisions resolve
-- every contact can leave its current state
-- quarantined channels remain unavailable
-- ghost knowledge changes correctly
-- agent state remains valid
-- all ending families are reachable
-- contact definitions reference valid dialogue cues
-- no required branch references missing content
+- contact reachability
+- state transitions
+- branch resolution
+- quarantine behavior
+- GHOST knowledge
+- ending reachability
+- invalid content references
+- scenario soft-locks
 
-Do not spend time testing:
-- visual polish
-- knob animation
+Do not prioritize automated tests for:
 - lighting
-- cosmetic room props
+- cosmetic animation
+- room decoration
 
 
-4. BUILT-IN GODOT SYSTEMS
+4. PROJECT ORGANIZATION
 
-Use Godot built-ins before adding dependencies.
-
-4.1 SubViewport / ViewportTexture
-
-Used for:
-- spectrum display
-- terminal
-- field map
-- any other animated monitor surface
-
-Each monitor should render a normal 2D Control scene into a SubViewport.
-
-The resulting ViewportTexture is assigned to the corresponding 3D monitor material.
-
-Do not draw complex UI directly in 3D.
-
-4.2 Audio buses and effects
-
-Use built-in audio buses for radio processing.
-
-Suggested bus layout:
-
-Master
-├── Environment
-├── Interface
-└── Radio
-    ├── Voice
-    └── Static
-
-Suggested Radio/Voice processing:
-
-BandPass
--> Compressor
--> mild Distortion
--> HardLimiter
--> SpectrumAnalyzer
-
-Runtime signal quality may affect:
-- clean voice volume
-- degraded voice volume
-- static volume
-- filter parameters
-- controlled dropout
-
-Critical gameplay information must remain recoverable through REPEAT.
-
-4.3 AnimationPlayer and Tween
-
-Use for:
-- player arm interaction
-- switch movement
-- knob feedback
-- indicator lights
-- small environmental events
-- screen transitions
-
-Prefer authored AnimationPlayer sequences for important interactions.
-
-Use Tween for short procedural feedback.
-
-4.4 Resource
-
-Use custom Resources for authored gameplay data such as contacts.
-
-Resources own:
-WHAT A CONTACT IS.
-
-They should not execute scenario logic themselves.
-
-4.5 Signals
-
-Primary communication mechanism between scenes.
-
-Rule:
-PARENT CONFIGURES DOWNWARD.
-CHILD REPORTS UPWARD.
-
-Reusable child scenes should not search the scene tree for global gameplay objects.
-
-
-5. PROJECT STRUCTURE
-
-Use feature-oriented organization.
+Use feature-oriented folders.
 
 res://
 │
@@ -255,21 +136,9 @@ res://
 │   └── gdUnit4/
 │
 ├── game/
-│   │
 │   ├── main/
-│   │   ├── main.tscn
-│   │   └── main.gd
-│   │
 │   ├── player/
-│   │   ├── player_rig.tscn
-│   │   ├── player_rig.gd
-│   │   └── interaction_ray.gd
-│   │
 │   ├── room/
-│   │   ├── room.tscn
-│   │   ├── room.glb
-│   │   └── materials/
-│   │
 │   ├── workstation/
 │   │   ├── radio/
 │   │   ├── spectrum/
@@ -278,13 +147,7 @@ res://
 │   │   ├── authentication/
 │   │   ├── microphone/
 │   │   └── quarantine/
-│   │
 │   └── scenario/
-│       ├── scenario_director.tscn
-│       ├── scenario_director.gd
-│       ├── scenario_state.gd
-│       ├── contact_definition.gd
-│       └── dialogue_runner.gd
 │
 ├── content/
 │   ├── contacts/
@@ -304,16 +167,12 @@ res://
     ├── GDD.txt
     └── TECHNICAL_DESIGN.txt
 
-Use .gdignore for:
-- docs/
-- tools/
-
-unless Godot must import a specific asset from those folders.
+Use .gdignore for docs/ and tools/ unless Godot must import a file from those folders.
 
 
-6. TOP-LEVEL SCENE COMPOSITION
+5. MAIN SCENE
 
-Recommended main scene:
+Recommended scene:
 
 Main
 ├── Room
@@ -331,43 +190,54 @@ Main
     ├── ScenarioState
     └── DialogueRunner
 
-Responsibilities must remain explicit.
-
-Main:
+Main owns:
 - scene composition
-- high-level wiring
+- high-level connections
 - startup
-- restart / ending transition
+- restart
+- ending transition
 
-Main does not contain gameplay rules.
+Main does not own gameplay rules.
+
+
+6. OWNERSHIP RULE
+
+Use this direction:
+
+PARENT CONFIGURES CHILD.
+CHILD REPORTS TO PARENT.
+
+Use signals for child-to-parent communication.
+
+Do not let a reusable child search the scene tree for gameplay objects.
+
+Do not use absolute node paths to reach unrelated systems.
 
 
 7. PLAYER RIG
 
 PlayerRig owns:
 - mouse look
-- constrained seated camera movement
+- constrained camera movement
 - interaction ray
-- currently focused interactable
+- current interaction focus
 - player arm presentation
 
 PlayerRig does not know:
 - active contact
-- ECHO agents
-- ghost state
-- authentication state
+- agent state
+- GHOST state
+- authentication result
 - scenario progression
 
-The player remains seated or tightly constrained around the workstation.
-
-Do not install a generic FPS controller unless the design later requires walking.
+Do not install a general FPS controller unless the game requires free walking.
 
 
 8. INTERACTION MODEL
 
-Use small dedicated interactive components.
+Use small interaction scripts.
 
-Base abstraction:
+Base type:
 
 class_name Interactable
 extends Node3D
@@ -387,7 +257,7 @@ func drag(delta: Vector2) -> void:
 func end_drag() -> void:
     pass
 
-Concrete scripts may include:
+Examples:
 - TuningKnob
 - CleanupKnob
 - AuthenticationButton
@@ -396,31 +266,34 @@ Concrete scripts may include:
 - QuarantineSwitch
 - PaperDocument
 
-Do not create one universal InteractiveObject configured through many unrelated exported flags.
+Do not create one universal interaction component with many unrelated configuration flags.
 
-Interaction ownership:
-- PlayerRig detects and forwards interaction
-- individual objects own their local behavior
-- meaningful gameplay events are emitted through signals
+PlayerRig detects the object.
+
+The object handles local behavior.
+
+The object emits gameplay events.
 
 
 9. RADIO CONSOLE
 
 RadioConsole owns:
-- current tuned frequency
-- target signal frequency
+- current frequency
+- target frequency
 - tuning tolerance
-- cleanup control
+- signal-quality control
 - current signal quality
-- local indicator state
+- local indicators
 
 RadioConsole does not own:
 - speaker identity
-- scenario branch
-- dialogue choice
-- field consequences
+- dialogue branch
+- scenario outcome
+- field consequence
 
-Suggested simplified signal model:
+Use a simple signal model.
+
+Example:
 
 frequency_error =
     abs(current_frequency - target_frequency)
@@ -435,92 +308,91 @@ tuning_quality =
 signal_quality =
     tuning_quality * cleanup_quality
 
-Approximate presentation bands:
+Suggested presentation:
 
 0.00-0.20
 Mostly static.
 
 0.20-0.45
-Fragments.
+Partial speech.
 
 0.45-0.70
-Understandable but degraded.
+Understandable speech with noise.
 
 0.70-1.00
-Clear.
+Clear speech.
 
-Target:
-A practiced player should acquire a normal signal in roughly 5-10 seconds.
+A practiced player should acquire a normal signal in 5-10 seconds.
 
-Do not implement a physically accurate software-defined radio simulation.
+Do not implement a full software-defined radio simulation.
 
 
-10. SPECTRUM DISPLAY
+10. PROGRAMMED DISPLAYS
 
-SpectrumMonitor is a 2D Control scene rendered through SubViewport.
+Use 2D Control scenes inside SubViewport nodes.
 
-Responsibilities:
-- display active carriers
-- show current tuned frequency
-- show signal strength
-- show ghost/anomalous carriers when required
+Assign each ViewportTexture to the correct 3D monitor material.
 
-Implementation:
+Do not build complex screen UI directly in 3D.
+
+
+11. SPECTRUM MONITOR
+
+SpectrumMonitor owns presentation only.
+
+Show:
+- active carriers
+- tuned frequency
+- signal strength
+- abnormal carriers when required
+
+Use:
 - custom _draw()
-- deterministic procedural spectrum
-- optional use of AudioEffectSpectrumAnalyzer for live voice visualization
+- deterministic generated spectrum
 
-The display may combine:
-- synthetic carrier visualization
-- actual current audio spectrum
+Optional:
+Use AudioEffectSpectrumAnalyzer for live voice visualization.
 
-Do not make gameplay depend on interpreting a physically accurate FFT.
+Do not require the player to understand a physically accurate FFT.
 
 
-11. TERMINAL
+12. TERMINAL MONITOR
 
-TerminalMonitor is a separate 2D Control scene rendered through SubViewport.
+TerminalMonitor shows only gameplay information.
 
-It should expose only gameplay-relevant information:
-
+Show:
 - active frequency
 - claimed callsign
 - last verified location
 - current objective
 - recent communication log
-- agent status when known
+- known agent status
 
 Do not build:
-- a fake full operating system
-- arbitrary terminal commands
-- unrelated apps
+- a full fake operating system
+- unrelated applications
+- arbitrary command-line features
 
-Later horror events may make terminal information unreliable.
+The terminal is an evidence source.
 
-The terminal is one evidence source, not an objective truth source.
-
-
-12. FIELD MAP
-
-FieldMap should remain intentionally small.
-
-Content:
-- 3-4 named locations
-- ECHO-ACTUAL last confirmed position
-- ECHO-2 last confirmed position
-- simple route lines
-
-It is reference material.
-
-It is not:
-- a tactical strategy layer
-- a freeform path planner
-- a resource-management screen
-
-REROUTE decisions select among authored valid destinations.
+The terminal can become unreliable later.
 
 
-13. CONTACT DEFINITION
+13. FIELD MAP
+
+Use 3-4 locations.
+
+Show:
+- last verified position of ECHO-ACTUAL
+- last verified position of ECHO-2
+- simple route connections
+
+REROUTE uses authored destinations.
+
+Do not make the map a strategy system.
+
+
+14. CONTACT DEFINITION
 
 Use a custom Resource.
 
@@ -549,7 +421,7 @@ extends Resource
 @export var required_flags: Array[StringName]
 @export var excluded_flags: Array[StringName]
 
-Content organization:
+Store contacts in:
 
 content/contacts/
 ├── contact_01_training.tres
@@ -563,21 +435,20 @@ content/contacts/
 
 ContactDefinition owns:
 - signal setup
-- identity claim
+- claimed identity
 - dialogue entry point
 - availability conditions
 
-It does not own:
-- scenario progression logic
-- UI
-- agent state mutation code
+ContactDefinition does not execute scenario logic.
 
 
-14. SCENARIO STATE
+15. SCENARIO STATE
 
-ScenarioState is a normal scene-local Node owned by ScenarioDirector.
+ScenarioState is a scene-local Node.
 
-Suggested state:
+ScenarioDirector owns ScenarioState.
+
+Suggested data:
 
 class_name ScenarioState
 extends Node
@@ -595,83 +466,76 @@ var ghost_knowledge: Dictionary[StringName, bool] = {}
 
 var flags: Dictionary[StringName, bool] = {}
 
-ScenarioState should stay small.
+ScenarioState owns persistent run data.
 
-It contains persistent run data.
-
-It should not:
+ScenarioState does not:
 - play audio
-- manipulate scene nodes
-- implement UI
+- change UI
+- manipulate workstation nodes
 - advance dialogue
 
-Dialogue Manager may receive ScenarioState as extra game state for conditions.
+Dialogue Manager can read ScenarioState as extra game state.
 
 
-15. SCENARIO DIRECTOR
+16. SCENARIO DIRECTOR
 
 ScenarioDirector owns:
-- contact sequencing
-- selecting the next eligible ContactDefinition
-- configuring the radio for the next contact
-- applying gameplay consequences
-- evaluating ending state
-- wiring scenario events to the StateChart
+- contact order
+- contact selection
+- contact eligibility
+- radio configuration
+- gameplay consequences
+- ending evaluation
+- connection between scenario events and State Charts
 
-It should not:
+ScenarioDirector does not:
 - render UI
-- play raw audio directly
-- manipulate individual radio knobs
-- own PlayerRig input
+- read raw player input
+- move radio controls
+- play voice files directly
 
 Typical flow:
 
-ScenarioDirector
--> load ContactDefinition
+load ContactDefinition
 -> configure RadioConsole
 -> enter TUNING
 -> wait for signal_acquired
--> DialogueRunner starts opening cue
+-> start opening dialogue
 -> enter RECEIVING
--> voice completes
+-> wait for voice completion
 -> enter VERIFYING
--> player repeats/authenticates
+-> process REPEAT or AUTHENTICATE
 -> enter DECIDING
--> receive operational decision
+-> receive player response
 -> apply state changes
 -> enter RESOLVING
 -> play consequence
--> next contact
+-> select next contact
 
 
-16. DIALOGUE RUNNER
+17. DIALOGUE RUNNER
 
-DialogueRunner bridges Dialogue Manager and game presentation.
+DialogueRunner connects Dialogue Manager to game presentation.
 
-Responsibilities:
+DialogueRunner owns:
 - request next dialogue line
-- resolve static line ID
-- play corresponding authored voice asset
-- append transcript line to terminal log
-- signal when the line/sequence is complete
+- read static line ID
+- play the matching voice asset
+- append transcript text
+- report line completion
+- report sequence completion
 
-Dialogue Runner does not choose branches independently.
+DialogueRunner does not choose scenario branches independently.
 
-Dialogue Manager conditions should use:
-- ScenarioState
-- active ContactDefinition
-- explicit decision context
+Use stable line IDs.
 
-Static dialogue line IDs should be stable.
+Examples:
+- C05_FAKE_01
+- C05_FAKE_02
+- C05_REAL_01
+- C07_AUTH_RESPONSE
 
-Example:
-
-C05_FAKE_01
-C05_FAKE_02
-C05_REAL_01
-C07_AUTH_RESPONSE
-
-Voice file convention:
+Voice files:
 
 content/voices/generated/
 ├── C05_FAKE_01.ogg
@@ -680,138 +544,140 @@ content/voices/generated/
 └── C07_AUTH_RESPONSE.ogg
 
 
-17. TTS PIPELINE
+18. TTS PIPELINE
 
-Do not ship runtime TTS for the initial game.
+Do not use runtime TTS in the initial version.
 
-Dialogue is authored.
+Generate authored voice files before the build.
 
-Development pipeline:
+Pipeline:
 
 dialogue source
--> voice generation tool
--> WAV/OGG
+-> local TTS tool
+-> WAV or OGG
 -> Godot import
 -> radio audio processing
 
-Recommended local generation:
-Piper or another lightweight offline TTS model.
+Use Piper or another lightweight offline TTS tool during development.
 
-Tooling:
+Tool:
 
-tools/
-└── generate_voices.py
+tools/generate_voices.py
 
-Each character should have a stable voice profile.
-
-Profiles:
+Use one stable voice profile for each agent:
 - ECHO-ACTUAL
 - ECHO-2
 
-The ghost does not receive a unique supernatural voice.
+When the GHOST copies an agent, use the same voice profile.
 
-When copying ECHO-ACTUAL:
-Use ECHO-ACTUAL's voice profile.
+Do not create a separate monster voice.
 
-When copying ECHO-2:
-Use ECHO-2's voice profile.
-
-Differences should come from:
-- wording
-- context
-- cadence
-- subtle authored behavior
-
-not obvious demon processing.
+Use text, context, and speech behavior as the main identity clues.
 
 
-18. AUDIO PLAYBACK
+19. AUDIO ARCHITECTURE
+
+Use Godot audio buses.
+
+Suggested layout:
+
+Master
+├── Environment
+├── Interface
+└── Radio
+    ├── Voice
+    └── Static
+
+Suggested Radio/Voice effects:
+
+BandPass
+-> Compressor
+-> light Distortion
+-> HardLimiter
+-> SpectrumAnalyzer
 
 RadioVoice owns voice playback.
 
-RadioStatic owns static/noise.
+RadioStatic owns radio noise.
 
-RadioConsole exposes signal quality.
+RadioConsole provides signal quality.
 
-Audio presentation uses signal quality to mix:
+Use signal quality to control:
+- voice level
+- noise level
+- filter values
+- limited dropout
 
-- clean voice
-- degraded voice/filter state
-- static
+Do not hide required information with audio effects.
 
-Avoid destructive realtime effects that can hide required evidence.
-
-If required information is obscured:
-REPEAT must remain available.
-
-Environmental audio should remain separate from Radio audio.
+REPEAT must remain available when required information is not clear.
 
 
-19. PLAYER ARM
+20. PLAYER ARM
 
 Use one rigged arm.
 
-Only animate interactions that repeatedly matter:
+Animate only repeated actions:
+- turn frequency dial
+- adjust signal-quality control
+- use authentication control
+- use push-to-talk
+- use quarantine control
 
-- tuning dial
-- cleanup control
-- authentication/request control
-- push-to-talk
-- quarantine switch
+Paper handling is optional.
 
-Optional:
-- handling a paper sheet
+Do not create unique animations for visual-only props.
 
-Do not produce bespoke animations for non-core props.
+Gameplay state should change from interaction events.
 
-Arm animation is presentation.
-
-Gameplay state changes should occur through explicit interaction events, not animation completion unless the timing is materially important.
+Do not depend on animation completion unless timing is required.
 
 
-20. QUARANTINE SYSTEM
+21. QUARANTINE SYSTEM
 
-Quarantine is the one irreversible sacrifice system.
+QUARANTINE CHANNEL is the only irreversible sacrifice system.
+
+Flow:
 
 QuarantineControl emits:
 quarantine_requested(channel)
 
-ScenarioDirector validates:
+ScenarioDirector checks:
 - channel is active
-- channel is quarantineable
-- action is allowed in current state
+- channel can be quarantined
+- current contact state permits quarantine
 
 ScenarioState records:
 quarantined_channels[channel] = true
 
-RadioConsole rejects normal future acquisition for quarantined channels.
+RadioConsole blocks normal future acquisition on that channel.
 
-ScenarioDirector selects alternate/failure content where appropriate.
+ScenarioDirector selects the correct later content.
 
-The system must be deterministic and testable.
+The system must be deterministic.
 
 
-21. ENDINGS
+22. ENDINGS
 
-Use three outcome families:
+Use three ending families.
 
 CONTAINED
-Enough real communication survives and the ghost is isolated.
+The operator keeps enough genuine communication and isolates the GHOST.
 
 ISOLATED
-The ghost is stopped but one or both agents are lost/unreachable.
+The operator stops the GHOST but loses one or both agents.
 
 OPEN_LINE
-The operator leaves a critical route open or trusts the imitation.
+The operator leaves a critical route open or trusts the copied identity at a critical point.
 
-Ending selection should evaluate scenario state.
+ScenarioDirector selects the ending from ScenarioState.
 
-Avoid bespoke ending logic spread across dialogue files.
+Do not distribute ending-selection logic across dialogue files.
 
 
-22. AUTOLOAD POLICY
+23. AUTOLOAD POLICY
 
-Own gameplay code should use almost no autoloads.
+Do not create gameplay autoloads unless a real global lifetime is required.
 
 Do not create:
 - GameManager
@@ -820,252 +686,227 @@ Do not create:
 - ScenarioManager
 - InteractionManager
 
-Scene-local ownership is preferred.
+Prefer scene-local ownership.
 
-Third-party addons may install required autoloads.
+Third-party addons can use their required autoloads.
 
-A future Settings autoload is acceptable if persistent settings become necessary.
-
-
-23. DEPENDENCY DIRECTION
-
-Preferred direction:
-
-Main
--> constructs and wires major systems
-
-ScenarioDirector
--> configures RadioConsole
--> configures DialogueRunner
--> reads/writes ScenarioState
-
-PlayerRig
--> interacts with workstation components
-
-Workstation components
--> emit signals upward
-
-Screens
--> consume read-only presentation data
-
-Avoid:
-- child nodes calling absolute scene paths
-- workstation objects mutating ScenarioState directly
-- UI deciding gameplay state
-- dialogue files directly manipulating arbitrary scene nodes
+A Settings autoload is acceptable if persistent settings are added.
 
 
-24. SIGNAL EXAMPLES
+24. SIGNAL CONTRACTS
+
+Recommended signals:
 
 RadioConsole:
-
-signal signal_acquired(frequency: float)
-signal tuning_changed(frequency: float)
-signal quality_changed(value: float)
+- signal_acquired(frequency: float)
+- tuning_changed(frequency: float)
+- quality_changed(value: float)
 
 AuthenticationControl:
-
-signal authentication_requested
+- authentication_requested
 
 RepeatControl:
-
-signal repeat_requested
+- repeat_requested
 
 OperatorDecisionPanel:
-
-signal decision_selected(action: StringName, target: StringName)
+- decision_selected(action: StringName, target: StringName)
 
 QuarantineControl:
-
-signal quarantine_requested(channel: StringName)
+- quarantine_requested(channel: StringName)
 
 DialogueRunner:
+- sequence_started
+- line_started(line_id: StringName)
+- line_finished(line_id: StringName)
+- sequence_finished
 
-signal sequence_started
-signal line_started(line_id: StringName)
-signal line_finished(line_id: StringName)
-signal sequence_finished
+ScenarioDirector subscribes to gameplay events.
 
-ScenarioDirector subscribes to meaningful gameplay events.
+Do not use a global event bus.
 
 
 25. TEST STRATEGY
 
-Primary automated target:
+Primary test target:
 scenario correctness.
 
-Build a scenario harness that can resolve contacts without requiring rendered 3D interaction.
+Create a scenario test harness that does not require 3D interaction.
 
-Tests should be able to:
+The harness must support:
 - load ScenarioState
-- load ContactDefinitions
+- load ContactDefinition
 - inject decisions
 - advance contacts
-- assert resulting state
+- inspect final state
 
-Required test groups:
+Required tests:
 
-CONTACT VALIDATION
-- unique contact IDs
-- valid dialogue resource
-- valid opening cue
-- valid channel
-- valid callsign
-- valid conditional flags
+CONTACT DATA
+- contact IDs are unique
+- dialogue resources exist
+- opening cues exist
+- channels are valid
+- callsigns are valid
+- required flags are valid
 
 FLOW
 - training reaches contact 2
-- every contact can resolve
-- no contact can permanently stall
+- each contact can resolve
+- no contact can remain blocked permanently
 - final contact is reachable
 
 QUARANTINE
-- quarantined channels stay blocked
-- alternate scenario route resolves
+- quarantined channels remain blocked
+- alternate content resolves
 - required endings remain reachable
 
 GHOST
-- knowledge progresses in expected order
-- copied authentication appears only after acquisition
-- impossible state combinations are rejected
+- GHOST knowledge changes in the correct order
+- copied authentication is not available before the GHOST learns it
+- invalid state combinations are rejected
 
 ENDINGS
-- contained reachable
-- isolated reachable
-- open-line reachable
+- CONTAINED is reachable
+- ISOLATED is reachable
+- OPEN_LINE is reachable
 
 
-26. PERFORMANCE EXPECTATIONS
-
-The project is small.
+26. PERFORMANCE
 
 Performance priorities:
-- stable frame pacing
+- stable frame time
 - no audio stutter
-- fast scene startup
-- lightweight screen rendering
+- fast startup
+- low-cost monitor rendering
 
-Do not prematurely optimize static room geometry.
-
-Likely expensive systems:
-- multiple high-resolution SubViewports
-- real-time spectrum rendering
+Potential high-cost systems:
+- high-resolution SubViewports
+- frequent spectrum updates
 - unnecessary dynamic lights
-- excessive shadow resolution
+- high shadow resolution
 
-Use modest SubViewport resolutions appropriate to physical monitor size.
+Use only the display resolution required by the physical monitor size.
 
-Update screens only as often as needed.
+Update a display only as often as its content requires.
+
+Do not optimize static room geometry before profiling.
 
 
-27. SAVE / RESTART
+27. SAVE AND RESTART
 
-Initial target:
-No full save architecture.
+Do not build a full save system for the initial version.
 
 Required:
-- clean restart
+- restart run
 - return to title
-- optional checkpoint before final act if testing requires it
 
-The entire game is approximately 30 minutes.
+Optional:
+- one development checkpoint before the final section
 
-Persistent settings may be stored separately if needed.
+Store persistent settings separately if required.
 
 
-28. VERSION CONTROL RULES
+28. VERSION CONTROL
 
-Commit source assets and project files.
+Commit:
+- Godot project files
+- source assets
+- dialogue source
+- generated voice files required by the build
+- voice generation tools
 
 Do not commit:
-- Godot .godot/ cache
-- imported generated cache
+- .godot/ cache
+- generated import cache
 - temporary Blender files
 - local editor state
 
-Generated voice files should be committed if they are required to run the game.
-
-Dialogue source and generation tools should also be committed so voices remain reproducible.
+Keep generated voice assets reproducible from source dialogue when possible.
 
 
 29. IMPLEMENTATION ORDER
 
 P0 - PROJECT FOUNDATION
 
-- create Godot project
-- install Dialogue Manager
-- install Godot State Charts
-- install GdUnit4
-- configure input
-- configure audio buses
-- create folder structure
-- create Main scene
+Create:
+- Godot project
+- addon installation
+- input actions
+- audio buses
+- folder structure
+- Main scene
 
 P1 - INTERACTION SLICE
 
+Create:
 - PlayerRig
 - interaction ray
 - radio blockout
-- tuning knob
-- one cleanup control
-- spectrum screen
-- signal quality
+- tuning control
+- signal-quality control
+- spectrum display
+- signal-quality model
 - one voice line
 
-P2 - COMPLETE 5-MINUTE LOOP
+P2 - 5-MINUTE CORE LOOP
 
+Create:
 - ScenarioDirector
 - ScenarioState
 - ContactDefinition
 - DialogueRunner
 - authentication control
 - HOLD / PROCEED
-- consequence dialogue
+- one consequence
 
-P3 - VERIFICATION SYSTEM
+P3 - VERIFICATION
 
+Create:
 - terminal
-- map
+- field map
 - paper reference
 - communication log
 - ECHO-2
-- first fake contact
+- first false contact
 
-P4 - FULL SCENARIO
+P4 - COMPLETE SCENARIO
 
-- all contact definitions
+Create:
+- all major contacts
 - duplicate identity
 - learned authentication
 - quarantine
 - final contact
-- endings
+- three ending families
 
 P5 - POLISH
 
-- rigged arm
-- audio tuning
+Prioritize:
+- player arm
+- voice clarity
+- radio feedback
 - lighting
-- subtle machine anomalies
-- settings/menu
-- final build validation
+- machine anomalies
+- menu/settings
+- build validation
 
 
 30. ARCHITECTURE RULES
 
-- Keep the project scene-oriented.
-- Prefer composition over inheritance.
+- Organize the project by feature.
+- Prefer composition to deep inheritance.
 - Use signals for child-to-parent communication.
-- Parent configures child; child reports upward.
-- Keep gameplay state scene-local.
-- Avoid gameplay autoloads.
-- Dialogue Manager owns dialogue content.
-- State Charts owns interaction lifecycle.
-- ContactDefinition owns authored contact configuration.
-- ScenarioState owns persistent run data.
-- ScenarioDirector owns scenario progression.
-- Workstation components own local interaction behavior.
-- UI presents state; it does not decide state.
-- Audio evidence must remain fair.
-- Runtime behavior should be deterministic where possible.
-- The complete scenario must remain testable without physically playing every branch.
-- If an abstraction does not simplify the 30-minute game, remove it.
+- Let parents configure children.
+- Keep persistent gameplay state in ScenarioState.
+- Keep ScenarioState scene-local.
+- Do not create gameplay autoload managers.
+- Let Dialogue Manager own dialogue content.
+- Let State Charts own the contact lifecycle.
+- Let ContactDefinition own contact configuration.
+- Let ScenarioDirector own scenario progression.
+- Let workstation components own local interaction behavior.
+- Let UI present state only.
+- Keep audio evidence understandable.
+- Keep scenario behavior deterministic when possible.
+- Test the complete scenario without 3D interaction.
+- Remove an abstraction if it does not simplify this game.
