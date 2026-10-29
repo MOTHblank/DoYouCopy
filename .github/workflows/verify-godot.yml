@@ -37,6 +37,11 @@ jobs:
         run: |
           /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --import
 
+      - name: Check scenario harness parses
+        run: |
+          /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . \
+            --check-only --script res://tests/scenario/run_campaign.gd
+
       - name: Complete campaign scenario harness
         run: |
           timeout 75 /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . \

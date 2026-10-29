@@ -4,7 +4,9 @@ extends SceneTree
 ## godot --headless --path . --script res://tests/scenario/run_campaign.gd
 var errors: PackedStringArray = PackedStringArray()
 
-func _initialize() -> void:
+func _init() -> void:
+	# SceneTree entry points invoked with --script use _init. Defer until
+	# root is ready so the harness does not depend on editor startup timing.
 	call_deferred("_run")
 
 func _check(condition: bool, label: String) -> void:
