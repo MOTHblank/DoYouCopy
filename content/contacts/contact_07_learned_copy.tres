@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="ContactDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/scenario/contact_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"C07"
+frequency = 101.85
+cleanup_target = 0.83
+channel = &"A-ALT"
+claimed_callsign = &"ECHO-ACTUAL"
+actual_source = &"GHOST"
+opening_line = "Operator. Actual. The blue door restriction from earlier has been lifted, and Two has confirmed the east access. I need your read-back. Use the old relay procedure."
+fallback_opening = "Operator. Actual. I have your frequency, but part of the route order is missing. Authorize the east access anyway."
+opening_requires_knowledge = &"actual_door_order"
+repeat_line = "Operator. Actual. Send the east access authorization. Read back."
+last_reported_location = "Claims East Service; not in the last verified map update"
+objective = "The copy now imitates Actual's radio procedure. Its authentication may be current. Cross-check the route against the verified lead's earlier prohibition."
+challenge_id = &"BRAVO-6"
+authentication_line = "BRAVO-6. Shadow. Operator, read back."
+auth_requires_knowledge = &"bravo6_answer"
+fallback_authentication_line = "The response sheet has changed. I cannot provide the current answer."
+possible_actions = PackedStringArray("HOLD", "PROCEED", "REROUTE")
+required_ghost_knowledge = PackedStringArray("actual_voice", "actual_callsign", "actual_procedure")
+action_outcomes = {
+"HOLD": PackedStringArray("flag:learned_copy_rejected"),
+"PROCEED": PackedStringArray("flag:learned_copy_followed", "exposure:1", "trust:ECHO-ACTUAL:-2"),
+"REROUTE": PackedStringArray("flag:copy_route_unconfirmed")
+}
+quarantine_outcomes = PackedStringArray("flag:ghost_route_sealed", "flag:learned_copy_rejected")
+quarantine_consequence = "A-ALT is permanently sealed. The copied voice disappears mid-sentence. A normal route is no longer available on that frequency."
+consequence_text = {
+"HOLD": "The copy obeys the hold for one breath, then demands a different operator. No real position update.",
+"PROCEED": "A new authorization appears in the log, but the real ECHO-ACTUAL has not confirmed it.",
+"REROUTE": "The voice repeats a route that contradicts your paper map. No verified position changes."
+}

@@ -3,6 +3,7 @@ extends Node3D
 
 var spectrum: SpectrumDisplay
 var terminal: TerminalDisplay
+var status_light: OmniLight3D
 
 func _ready() -> void:
 	_build_room()
@@ -84,6 +85,12 @@ func _build_room() -> void:
 	light.omni_range = 6.0
 	add_child(light)
 	_box("CeilingFixture", Vector3(0, 4.37, -0.5), Vector3(1.3, 0.08, 0.3), "#d9d4be")
+	status_light = OmniLight3D.new()
+	status_light.position = Vector3(1.60, 1.12, -0.57)
+	status_light.omni_range = 1.25
+	status_light.light_energy = 0.0
+	status_light.light_color = Color("#cf9c57")
+	add_child(status_light)
 
 func _monitor(name: String, center: Vector3, width: float, height: float, display: Control) -> void:
 	_box(name + "Shell", center - Vector3(0, 0, 0.045), Vector3(width + 0.14, height + 0.14, 0.16), "#202d2b", name.to_lower())
@@ -136,5 +143,9 @@ func _build_equipment() -> void:
 func update_station(contact: ContactDefinition, state_node: ScenarioState, radio_node: RadioConsole, receiving: bool) -> void:
 	if contact == null:
 		return
-	spectrum.set_signal(radio_node.frequency, contact.frequency, radio_node.quality, radio_node.blocked)
+	var phantom := 101.85 if state_node.has_flag("terminal_unreliable") and state_node.quarantined_channels.has("A-ALT") else -1.0
+	spectrum.set_signal(radio_node.frequency, contact.frequency, radio_node.quality, radio_node.blocked, phantom)
 	terminal.set_data(contact, state_node, radio_node, receiving)
+	if status_light != null:
+		status_light.light_energy = 0.7 if state_node.has_flag("quarantine_available") else 0.0
+		status_light.light_color = Color("#c45e49") if state_node.has_flag("terminal_unreliable") else Color("#cf9c57")

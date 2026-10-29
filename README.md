@@ -1,4 +1,4 @@
-> **Playable prototype (Godot 4.7):** The first four-contact vertical slice is now in this repository. Open `project.godot` and run the main scene. See [controls, architecture and current limitations](PLAYABLE_SLICE.md). The scenario remains a work in progress and does not yet include voice recordings or all eight major contacts.
+> **Authored eight-contact Godot 4.7 campaign foundation:** The playable project now includes radio tuning, verification, GHOST learning, irreversible channel quarantine, and three ending families. Open `project.godot` and run the main scene. See [controls, scenario and current limitations](PLAYABLE_SLICE.md). Godot runtime validation and authored voice recordings remain unfinished.
 
 ---
 

@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="ContactDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/scenario/contact_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"C08"
+frequency = 101.3
+cleanup_target = 0.28
+channel = &"A-PRIMARY"
+claimed_callsign = &"ECHO-ACTUAL"
+actual_source = &"ECHO-ACTUAL"
+opening_line = "Operator. Actual. My position is still the last one I read back to you. The station index says something else. Confirm from your own log. Give me one final instruction."
+repeat_line = "Actual repeating: trust your verified read-backs, not the last automatic terminal update. Awaiting your final order."
+last_reported_location = "Use operator-confirmed read-back, not automatic sync"
+objective = "FINAL: The terminal's synchronized location differs from the verified map. HOLD, PROCEED, REROUTE or seal the genuine primary channel."
+challenge_id = &"NORTH-8"
+authentication_line = "NORTH-8. Bridge. Operator, ready for your order."
+possible_actions = PackedStringArray("HOLD", "PROCEED", "REROUTE")
+terminal_anomaly = true
+branch_openings = {
+"learned_copy_followed": "Operator. Actual. That last authorization was not mine. Your terminal changed my location to East Service. I'm still on my last verified route. Choose your instruction carefully.",
+"ghost_route_sealed": "Operator. Actual. The alternate channel has gone silent, but the terminal is now listing me at East Service. Check your own log. What is my instruction?",
+"impostor_followed": "Operator. Actual. I still cannot reach Two. The machine claims I am at East Service. I have not reported that. One last instruction, Operator."
+}
+action_outcomes = {
+"HOLD": PackedStringArray("flag:final_held", "trust:ECHO-ACTUAL:1"),
+"PROCEED": PackedStringArray("flag:final_blind_clearance", "exposure:1"),
+"REROUTE": PackedStringArray("flag:final_verified_reroute", "location:ECHO-ACTUAL:Pump Station B", "trust:ECHO-ACTUAL:1")
+}
+quarantine_outcomes = PackedStringArray("flag:primary_sacrificed")
+quarantine_consequence = "The primary ECHO-ACTUAL channel is permanently cut. The final reply cannot be delivered. The operator has sacrificed genuine contact."
+consequence_text = {
+"HOLD": "Actual acknowledges a safe stand-down. The last verified field map remains your only trusted location index.",
+"PROCEED": "The terminal accepts the automatic route. A new relay permission is issued despite the conflicting field report.",
+"REROUTE": "Actual reads back the verified route to Pump Station B. The terminal still reports East Service. The inconsistency is preserved in the record."
+}

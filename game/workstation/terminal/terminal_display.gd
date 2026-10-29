@@ -26,7 +26,7 @@ func _draw() -> void:
 	var lines := [
 		"RX: %.2f MHz   %s" % [radio.frequency, status],
 		"CLAIMED: %s" % (String(current_contact.claimed_callsign) if is_acquired else "UNCONFIRMED"),
-		"VERIFIED A: %s" % str(run_state.agent_locations["ECHO-ACTUAL"]),
+		"SYNC A: %s" % run_state.displayed_location("ECHO-ACTUAL"),
 		"VERIFIED 2: %s" % str(run_state.agent_locations["ECHO-2"]),
 		"STATUS A: %s" % str(run_state.agent_status["ECHO-ACTUAL"]),
 		"STATUS 2: %s" % str(run_state.agent_status["ECHO-2"]),

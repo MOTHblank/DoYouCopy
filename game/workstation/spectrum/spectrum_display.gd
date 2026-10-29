@@ -6,6 +6,7 @@ var tuned_frequency: float = 101.0
 var carrier_frequency: float = 101.3
 var quality: float = 0.0
 var blocked: bool = false
+var anomaly_frequency: float = -1.0
 var elapsed: float = 0.0
 var redraw_timer: float = 0.0
 
@@ -16,11 +17,12 @@ func _process(delta: float) -> void:
 		redraw_timer = 0.0
 		queue_redraw()
 
-func set_signal(tuned: float, carrier: float, signal_quality: float, is_blocked: bool) -> void:
+func set_signal(tuned: float, carrier: float, signal_quality: float, is_blocked: bool, phantom_carrier: float = -1.0) -> void:
 	tuned_frequency = tuned
 	carrier_frequency = carrier
 	quality = signal_quality
 	blocked = is_blocked
+	anomaly_frequency = phantom_carrier
 	queue_redraw()
 
 func _draw() -> void:
@@ -46,6 +48,9 @@ func _draw() -> void:
 		var y := bottom - height
 		draw_line(Vector2(x, bottom), Vector2(x, y), Color("#55bcb0", 0.70), 2.0)
 	draw_line(Vector2(tune_x, top), Vector2(tune_x, bottom), Color("#efd18d"), 3.0)
+	if anomaly_frequency > 0.0:
+		var anomaly_x := left + ((anomaly_frequency - 100.0) / 10.0) * (right - left)
+		draw_line(Vector2(anomaly_x, top + 6.0), Vector2(anomaly_x, bottom - 6.0), Color("#b47367", 0.64), 2.0)
 	var font := ThemeDB.fallback_font
 	draw_string(font, Vector2(left, 25), "SPECTRUM / LIVE CARRIER", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#a7dfd3"))
 	draw_string(font, Vector2(left, size.y - 8), "RX %.2f MHz   SIG %02d%%" % [tuned_frequency, roundi(quality * 100.0)], HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#efd18d"))

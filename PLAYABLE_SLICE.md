@@ -1,38 +1,48 @@
-# Do You Copy? — playable Godot vertical slice
+# Do You Copy? — complete authored scenario foundation
 
-Open `project.godot` in **Godot 4.7**, import the project, and press **F6** on `game/main/main.tscn` or **F5** to run. The repository now contains a generated, single-room workstation with a working four-contact slice. There are no external model/texture dependencies.
+The GitHub main branch contains a Godot 4.7 project with eight authored major radio contacts, the three ending families, and a low-poly single-room workstation. **This is a gameplay implementation, not yet a runtime-verified or fully voiced release.** Open `project.godot` in Godot 4.7 and run the main scene (F5).
 
-## Controls
+## Operator controls
 
-- **Mouse:** click operator controls in the readable UI or the physical workstation (paper, radio, terminal, microphone); **right-drag** to turn the seated camera.
-- **Frequency:** enter the assigned MHz directly, use the numeric spinner, or use **Up/Down** (0.05 MHz steps). All contacts are between 100–110 MHz.
-- **Signal cleanup:** drag the cleanup slider until the receiver reports **VOICE LOCK**. The target is deliberately forgiving; tuning is not the identity puzzle.
-- **R / A:** REPEAT and AUTHENTICATE once a transmission is received.
-- **1 / 2 / 3:** HOLD, PROCEED, REROUTE when the current contact permits it. You can also click the buttons.
-- **Enter / Continue:** advance after the consequence has been read. Restart from the shift report.
+- **Right-mouse drag**: constrained seated camera look.
+- **Left-click**: inspect equipment or use the readable UI.
+- **Mouse wheel / Up / Down**: radio tuning in 0.05 MHz steps.
+- **Frequency box + cleanup slider**: acquire and clean the incoming carrier. Normal acquisition is intentionally short.
+- **R / A**: REPEAT / AUTHENTICATE.
+- **1 / 2 / 3**: HOLD / PROCEED / REROUTE. Available choices are authored per contact.
+- **Q**: request quarantine after the safety guard unlocks. A **confirmation dialog** shows the channel and whether a real agent relies on it. Up to two channels can be sealed; this cannot be undone.
+- **Enter**: advance after a consequence; restart from the ending report.
+- **Reference desk**: terminal, timed authentication sheets, verified map, and a communication log remain independently inspectable.
 
-## Contact sequence
+## Eight-contact campaign (design spoilers)
 
-1. **C01 / 101.30 / ECHO-ACTUAL:** routine identification, DELTA-4, first operational decision.
-2. **C02 / 104.70 / ECHO-2:** speech habits, TIDE-2, choice of east route or a hold.
-3. **C03 / 104.15 / claimed ECHO-2:** the false carrier is on an unassigned frequency; its retired authentication answer is available **only if the operator requested and heard TIDE-2 authentication** on the previous live contact. Compare the authentication paper and verified map. Wrong decisions alter the field state rather than ending the run.
-4. **C04 / 101.30 / ECHO-ACTUAL:** explicitly branches on C03's decision and reports its consequence.
+1. **C01 / 101.30 / ECHO-ACTUAL** — training, DELTA-4, first verified instruction.
+2. **C02 / 104.70 / ECHO-2** — normal speech behavior, TIDE-2, field positions.
+3. **C03 / 104.15 / GHOST as ECHO-2** — unassigned carrier and incorrect/obsolete authentication. Retired TIDE-2 is spoken only if the GHOST overheard it.
+4. **C04 / 101.30 / ECHO-ACTUAL** — previous decision's consequence and BRAVO-6 challenge.
+5. **C05 / 101.30 + 101.85 intercept** — two claims using Actual's voice; one contradicts the verified blue-door order. Authorship of the second intercept requires previously learned voice/callsign.
+6. **C06 / 101.85 / GHOST as Actual** — DELTA-4, an obsolete answer, is produced only when previously overheard. Quarantine becomes available **after** this contact resolves.
+7. **C07 / 101.85 / learned copy** — can answer the current BRAVO-6 only if overheard from an earlier real contact. Quarantine here can permanently seal A-ALT, without cutting Actual's primary route.
+8. **C08 / 101.30 / ECHO-ACTUAL** — terminal synchronization conflicts with the last independently verified map. The final decision determines containment alongside earlier mistakes and whether a real channel was sacrificed.
 
-The terminal contains *claims* and last known verified positions, not a secret TRUE/FALSE judgment. The paper is an independent reference. The map is intentionally a small evidence aid, not a strategy mode.
+If C07's A-ALT channel was sealed, C08 still takes place on A-PRIMARY. A second quarantine can cut Actual's **legitimate primary route**, leading to an isolation cost.
 
-## Architecture
+## State and ownership
 
-- `ContactDefinition` is an authored `.tres` resource holding signal, identity claims, dialogue text, eligibility, knowledge dependencies, and per-action consequences.
-- `ScenarioState` contains run-local locations, statuses, flags, decisions, channel state, and an explicit **GHOST knowledge ledger**. New facts carry provenance in `knowledge_history`.
-- `ScenarioDirector` owns WAITING → TUNING → RECEIVING → VERIFYING → DECIDING → RESOLVING → COMPLETE, validates actions, and advances the scenario. Presenters do not mutate progression.
-- `RadioConsole` owns tuning, cleanup, quality and acquisition; it cannot identify the caller.
-- `WorkstationRoom` creates the low-poly room and maps lightweight spectrum/terminal Controls into 3D monitor SubViewports. `PlayerRig` only owns looking and workstation selection. `WorkstationHUD` is the legible fallback for interaction.
-- `StationAudio` provides generated operator-interface beeps. **No radio voice assets are claimed to exist.**
+- `ContactDefinition`: stable IDs, authored voice lines, secondary carriers, rule-gated phrases, conditional openings, operational outcomes, and anomaly flags.
+- `ScenarioDirector`: interaction lifecycle and contact eligibility. Acquiring a signal, repeating a line, challenging identity, deciding and quarantining are explicit events.
+- `ScenarioState`: verified field positions, asymmetric agent statuses/trust, permanent channel seals, bounded GHOST knowledge with provenance, flags, operator choices, and ending resolution.
+- `RadioConsole`: frequency and signal cleanup only. It does not know whether a caller is authentic.
+- `WorkstationHUD`: readable diegetic reference and controls. The terminal can present a false *synchronized* location; the reference map continues to show the real verified location.
+- `WorkstationRoom`: procedural office, projected spectrum/terminal displays, protective quarantine control, and staged lighting.
+- `RadioVoice`: optional playback of authored offline OGG clips keyed by stable IDs, **never runtime TTS**; text log always remains available.
 
-## Scope of this first slice
+## Current limitations
 
-**Implemented:** the Godot project, station blockout and lighting, fixed-position first-person camera, ray-selected props, numerical radio tuning, cleanup, live spectrum, terminal, paper/map evidence, repeat/authenticate, operational responses, four authored contacts, consequence branching, deterministic GHOST knowledge, run restart and a brief summary.
+Runtime validation in Godot remains necessary. The repository has a headless scenario verification script but it has not been run in the current authoring environment. Actual OGG voice recordings have **not** yet been committed; see [voice generation](docs/VOICE_PIPELINE.md). State Charts, Dialogue Manager, a first-person rigged arm, radio bus DSP and a complete 25–35-minute audio/pacing pass remain future integration/polish. The contact content supplies the eight major beats, not a final timed release.
 
-**Still to create for the full game:** recorded/TTS voice files with consistent agent voice identities, full Dialogue Manager / State Charts integration, a rigged arm, authored contacts 05–08 and the three ending families. The quarantine control is deliberately **locked** until a later contact explicitly unlocks it; no misleading irreversible action is offered in the introductory slice. The 25–35 minute pacing target is for the complete scenario, not this four-contact prototype.
+Run the headless scenario harness after importing the project:
 
-This project was authored without an available Godot executable for runtime validation. The scene should be opened in Godot before calling it a verified build.
+```shell
+godot --headless --path . --script res://tests/scenario/run_campaign.gd
+```

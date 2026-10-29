@@ -21,6 +21,7 @@ var repeat_button: Button
 var auth_button: Button
 var next_button: Button
 var quarantine_button: Button
+var quarantine_confirmation: ConfirmationDialog
 var active_contact: ContactDefinition
 var last_message: String = "Waiting for a carrier."
 var result_message: String = ""
@@ -156,7 +157,7 @@ func _build_ui() -> void:
 		var button := _button(action_row, action, func() -> void: director.decide(selected))
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		action_buttons[action] = button
-	quarantine_button = _button(left, "CHANNEL QUARANTINE / LOCKED", func() -> void: director.quarantine_current())
+	quarantine_button = _button(left, "CHANNEL QUARANTINE / LOCKED", func() -> void: _request_quarantine_confirmation())
 	_text(left, "Quarantine is irreversible. Introduced later in the campaign.", 12, "#b4a18b")
 	next_button = _button(left, "CONTINUE / NEXT CARRIER", func() -> void:
 		if complete:
@@ -165,6 +166,15 @@ func _build_ui() -> void:
 			director.advance()
 	)
 	next_button.disabled = true
+
+	quarantine_confirmation = ConfirmationDialog.new()
+	quarantine_confirmation.title = "Seal radio channel?"
+	quarantine_confirmation.ok_button_text = "SEAL PERMANENTLY"
+	quarantine_confirmation.confirmed.connect(func() -> void:
+		if director != null:
+			director.quarantine_current()
+	)
+	add_child(quarantine_confirmation)
 
 	var right := _panel(canvas, -354, 72, -14, -14, 1, 1, 0, 1)
 	_text(right, "REFERENCE DESK", 22, "#e7cf9b")
@@ -197,6 +207,10 @@ func _build_ui() -> void:
 func _contact_started(contact: ContactDefinition, number: int, total: int) -> void:
 	complete = false
 	report_text = ""
+	if number == 1:
+		transcript.clear()
+		latest_label.text = "No intelligible transmission."
+		tabs.select(0)
 	total_contacts = total
 	active_contact = contact
 	last_message = "Search for the active carrier; compare it to the assigned frequency."
@@ -231,7 +245,7 @@ func _run_finished(report: String) -> void:
 	complete = true
 	report_text = report
 	last_message = report
-	latest_label.text = "PROTOTYPE SHIFT COMPLETE — SEE REPORT AT RIGHT"
+	latest_label.text = "SHIFT COMPLETE — ENDING REPORT AT RIGHT"
 	transcript.append_text("[SHIFT REPORT]\n%s\n" % report)
 	tabs.select(0)
 	_refresh()
@@ -262,8 +276,33 @@ func _refresh() -> void:
 	auth_button.text = "A / AUTHENTICATE" if not director.auth_requested else "AUTH RESPONSE LOGGED"
 	for action in action_buttons.keys():
 		action_buttons[action].disabled = not active or active_contact == null or not active_contact.possible_actions.has(str(action))
-	quarantine_button.disabled = not active or not run_state.has_flag("quarantine_available")
-	quarantine_button.text = "QUARANTINE / ARMED" if run_state.has_flag("quarantine_available") else "CHANNEL QUARANTINE / LOCKED"
+	var can_seal := (
+		active and active_contact != null
+		and run_state.has_flag("quarantine_available")
+		and run_state.can_access(active_contact.channel)
+		and run_state.quarantine_count < 2
+	)
+	quarantine_button.disabled = not can_seal
+	quarantine_button.text = (
+		"SEAL %s / IRREVERSIBLE" % String(active_contact.channel)
+		if can_seal else "CHANNEL QUARANTINE / LOCKED"
+	)
+
+func _request_quarantine_confirmation() -> void:
+	if director == null or director.phase != "VERIFYING" or active_contact == null:
+		return
+	if not run_state.has_flag("quarantine_available"):
+		return
+	if not run_state.can_access(active_contact.channel) or run_state.quarantine_count >= 2:
+		return
+	var channel := String(active_contact.channel)
+	var owner := str(ScenarioState.CHANNEL_OWNERS.get(channel, "NONE"))
+	quarantine_confirmation.dialog_text = (
+		"This permanently blocks %s for the rest of the shift.\n" % channel
+		+ "Primary field agent using this channel: %s.\n\n" % owner
+		+ "The action cannot be undone. Your next contact may be lost."
+	)
+	quarantine_confirmation.popup_centered()
 
 func show_station_object(action: String) -> void:
 	match action:
@@ -279,8 +318,7 @@ func show_station_object(action: String) -> void:
 			if director != null and director.phase == "RESOLVING":
 				director.advance()
 		"quarantine":
-			if director != null:
-				director.quarantine_current()
+			_request_quarantine_confirmation()
 	_update_evidence()
 
 func _update_evidence() -> void:
@@ -296,7 +334,7 @@ func _update_evidence() -> void:
 		0:
 			evidence_text.text = "ECHO FIELD TERMINAL\n----------------------------\nRX: %.2f MHz\nCALL CLAIM: %s\n\nLAST VERIFIED:\nACTUAL: %s / %s\nECHO-2: %s / %s\n\nCURRENT OBJECTIVE:\n%s\n\nWARNING: a caller claim is not a verified location." % [
 				radio.frequency, String(active_contact.claimed_callsign) if director.phase != "TUNING" else "UNCONFIRMED",
-				run_state.agent_locations["ECHO-ACTUAL"], run_state.agent_status["ECHO-ACTUAL"],
+				run_state.displayed_location("ECHO-ACTUAL"), run_state.agent_status["ECHO-ACTUAL"],
 				run_state.agent_locations["ECHO-2"], run_state.agent_status["ECHO-2"],
 				active_contact.objective]
 		1:
@@ -306,6 +344,8 @@ func _update_evidence() -> void:
 					reference = "DELTA-4 / CURRENT\nWhat has keys but opens no locks?\nKEYBOARD"
 				"C02":
 					reference = "TIDE-2 / CURRENT\nWhat has a bed but never sleeps?\nRIVER\n\nDELTA-4 / FILED\nKEYBOARD"
+				"C08":
+					reference = "NORTH-8 / CURRENT\nWhat holds a road but never walks?\nBRIDGE\n\nBRAVO-6 / RETIRED\nSHADOW\n\nTIDE-2 / RETIRED\nRIVER"
 				_:
 					reference = "BRAVO-6 / CURRENT\nWhat follows you in the light?\nSHADOW\n\nTIDE-2 / RETIRED\nRIVER\n\nDELTA-4 / RETIRED\nKEYBOARD"
 			evidence_text.text = "PAPER / AUTH CHALLENGES\n----------------------------\n%s\n\nACTIVE CHALLENGE: %s\n\nA matching answer confirms only knowledge, not identity." % [reference, String(active_contact.challenge_id)]
@@ -334,6 +374,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			director.decide(&"PROCEED")
 		KEY_3:
 			director.decide(&"REROUTE")
+		KEY_Q:
+			_request_quarantine_confirmation()
 		KEY_ENTER:
 			if director.phase == "RESOLVING":
 				director.advance()

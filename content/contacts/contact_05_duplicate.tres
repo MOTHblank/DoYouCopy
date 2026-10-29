@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="ContactDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/scenario/contact_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"C05"
+frequency = 101.3
+cleanup_target = 0.66
+channel = &"A-PRIMARY"
+claimed_callsign = &"ECHO-ACTUAL"
+actual_source = &"ECHO-ACTUAL"
+opening_line = "Operator. Actual. My earlier order stands. ECHO-2 must not enter the blue maintenance door. Confirm."
+repeat_line = "Operator. ECHO-ACTUAL. The blue door is NOT cleared. Read back the restriction."
+parallel_callsign = &"ECHO-ACTUAL"
+parallel_frequency = 101.85
+parallel_line = "Operator. Actual here, second carrier. Correction: the blue door has been inspected. Authorize entry. Do not wait for a second confirmation."
+parallel_requires_knowledge = PackedStringArray("actual_voice", "actual_callsign")
+last_reported_location = "According to the last verified operational order"
+objective = "TWO copies of Actual are audible. Compare the original no-entry order with the simultaneous correction from 101.85 MHz."
+challenge_id = &"BRAVO-6"
+authentication_line = "BRAVO-6. Shadow. Operator, the restriction is unchanged."
+possible_actions = PackedStringArray("HOLD", "PROCEED", "REROUTE")
+learned_on_receive = PackedStringArray("actual_door_order", "station_terminal_sync")
+learned_on_authentication = PackedStringArray("bravo6_answer")
+branch_openings = {
+"actual_rerouted": "Operator. Actual at Pump Station B, on the route you assigned. I did not clear the blue door. Read back.",
+"impostor_followed": "Operator. Actual. Two is still missing. I have given no new orders about that blue door. Read back."
+}
+action_outcomes = {
+"HOLD": PackedStringArray("flag:duplicate_held", "trust:ECHO-ACTUAL:1"),
+"PROCEED": PackedStringArray("flag:duplicate_followed", "exposure:1", "trust:ECHO-ACTUAL:-2"),
+"REROUTE": PackedStringArray("flag:duplicate_rerouted", "location:ECHO-ACTUAL:Pump Station B")
+}
+consequence_text = {
+"HOLD": "The verified lead confirms the hold. The second carrier repeats the earlier correction without acknowledging the hold.",
+"PROCEED": "The unverified carrier copies your clearance. The real lead immediately denies authorizing that instruction.",
+"REROUTE": "Actual reads back a route to Pump Station B. The second carrier does not acknowledge the change."
+}

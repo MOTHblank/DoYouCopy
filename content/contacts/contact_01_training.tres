@@ -16,7 +16,7 @@ objective = "Verify the team lead. Route towards the Junction or hold at Relay."
 challenge_id = &"DELTA-4"
 authentication_line = "DELTA-4 response: keyboard. Operator, copy?"
 possible_actions = PackedStringArray("HOLD", "PROCEED")
-learned_on_receive = PackedStringArray("actual_voice", "actual_callsign")
+learned_on_receive = PackedStringArray("actual_voice", "actual_callsign", "actual_procedure")
 learned_on_authentication = PackedStringArray("delta4_answer")
 action_outcomes = {
 "HOLD": PackedStringArray("flag:training_held", "trust:ECHO-ACTUAL:-1"),

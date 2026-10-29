@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="ContactDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/scenario/contact_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"C06"
+frequency = 101.85
+cleanup_target = 0.49
+channel = &"A-ALT"
+claimed_callsign = &"ECHO-ACTUAL"
+actual_source = &"GHOST"
+opening_line = "Operator. Actual. Secondary transfer is ready. Continue the blue-door authorization. Standing by for challenge."
+repeat_line = "Actual. Secondary transfer. Send the new instruction now, Operator."
+last_reported_location = "Unconfirmed / alternate channel"
+objective = "Challenge the secondary voice against the CURRENT sheet, not a retired but once-valid answer."
+challenge_id = &"BRAVO-6"
+authentication_line = "DELTA-4. Keyboard. That is the answer you accepted before."
+auth_requires_knowledge = &"delta4_answer"
+fallback_authentication_line = "Authentication readback lost. Repeat from your own reference, Operator."
+possible_actions = PackedStringArray("HOLD", "PROCEED", "REROUTE")
+required_ghost_knowledge = PackedStringArray("actual_voice", "actual_callsign")
+unlock_quarantine_after = true
+action_outcomes = {
+"HOLD": PackedStringArray("flag:old_code_rejected"),
+"PROCEED": PackedStringArray("flag:old_code_accepted", "exposure:1"),
+"REROUTE": PackedStringArray("flag:old_code_diverted")
+}
+consequence_text = {
+"HOLD": "The alternate carrier keeps asking whether DELTA-4 is still current. A station warning follows.",
+"PROCEED": "Your clearance is rebroadcast from the alternate carrier. The station marks the route as compromised.",
+"REROUTE": "The false station repeats the destination but has no field-position confirmation. A station warning follows."
+}
