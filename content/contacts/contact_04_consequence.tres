@@ -16,6 +16,7 @@ last_reported_location = "Relay / Junction"
 objective = "Use the verified team lead's warning to stabilize the field response."
 challenge_id = &"BRAVO-6"
 authentication_line = "BRAVO-6. Shadow. Is that confirmed, Operator?"
+learned_on_authentication = PackedStringArray("bravo6_answer")
 possible_actions = PackedStringArray("HOLD", "PROCEED", "REROUTE")
 branch_openings = {
 "impostor_followed": "Operator. Actual here. I heard your blue-door clearance. Two isn't answering. I never authorized that route. Who gave you that report?",
