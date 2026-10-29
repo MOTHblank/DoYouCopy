@@ -1,0 +1,222 @@
+{
+  "schema": 1,
+  "backend": "espeak",
+  "clips": {
+    "C01_OPEN": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "Operator. ECHO-ACTUAL at Relay. Morning check. Read my identifier and confirm my route to the junction.",
+      "profile": "",
+      "source_hash": "8911a1a6202218082bb6213d8974fdec290e01e73bd171db6e440208644645dd"
+    },
+    "C01_REPEAT": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "ECHO-ACTUAL, at Relay. Operator, awaiting a route instruction. Read back.",
+      "profile": "",
+      "source_hash": "e04145e92a3ab35179a4ee887bdd6b4d44e027e8cc180073c38fbff35db6aac1"
+    },
+    "C01_AUTH": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "DELTA-4 response: keyboard. Operator, copy?",
+      "profile": "",
+      "source_hash": "3fcd540f5c9b6fa268f4a7e5b96b62aa9ef0e53d4b4cc8fb6b3b4b537867aed2"
+    },
+    "C02_OPEN": {
+      "speaker": "ECHO-2",
+      "text": "Hey, Operator, Two here. Pump B, west access. Can I cross to the East Service Room, or wait? This place smells like wet wiring.",
+      "profile": "",
+      "source_hash": "700c54704e1998b44840a77331c7c314fa93595a5327bdc773958b1ceb2bd4c0"
+    },
+    "C02_REPEAT": {
+      "speaker": "ECHO-2",
+      "text": "Two here, Pump B. East service route or hold? Actual knows I'm at the pump.",
+      "profile": "",
+      "source_hash": "f8431ef4f107e726c60bb3a12ad7be79de66081290eab4a858c1e74de6b83207"
+    },
+    "C02_AUTH": {
+      "speaker": "ECHO-2",
+      "text": "TIDE-2? River. Always a river.",
+      "profile": "",
+      "source_hash": "206d9ff9ca393f7b9de4ec765ea2d04d9c71388a02db10ae731666b64a948a53"
+    },
+    "C03_OPEN": {
+      "speaker": "ECHO-2",
+      "text": "Two here. Reporting from East Service. Actual cleared the blue maintenance door. Operator, tell me to go through.",
+      "profile": "",
+      "source_hash": "e5e2402875385b96e3d2fd0baa32dc0f7d0389bfa9f31ff3a0e9ef3d90d6c189"
+    },
+    "C03_REPEAT": {
+      "speaker": "ECHO-2",
+      "text": "ECHO-2. East Service. Blue door cleared by Actual. Need an instruction.",
+      "profile": "",
+      "source_hash": "7162c4d264ef9b4821ce75ce963c6d71cdbcabea93da9e05ce1491840224f31a"
+    },
+    "C03_AUTH": {
+      "speaker": "ECHO-2",
+      "text": "Response: river. That's what we agreed.",
+      "profile": "",
+      "source_hash": "870fd26a225098870c8304638011ed49ef033fd972f563116ea0582e10f9dec1"
+    },
+    "C03_AUTH_FALLBACK": {
+      "speaker": "ECHO-2",
+      "text": "I... can't read that. Repeat the prompt, Operator.",
+      "profile": "",
+      "source_hash": "27f9cf42f42a72678bc25156357cd5ab1b34b2976f11b3e12758b2767cf05bfd"
+    },
+    "C04_OPEN": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "Operator. Actual. Nobody gave clearance for the blue door. Someone transmitted on an unassigned carrier. Keep Two away from it.",
+      "profile": "",
+      "source_hash": "a6c2b17e56048aa53901ea6f8e75849962a1b74a6fb580a3b6bb477373b22058"
+    },
+    "C04_REPEAT": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "Actual, repeating: no blue-door clearance. Do not trust that carrier. Operator, read back.",
+      "profile": "",
+      "source_hash": "303203654881d538b2d092d47140c8dcc65715e17c183ce2a4be8aa8b784ab06"
+    },
+    "C04_AUTH": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "BRAVO-6. Shadow. Is that confirmed, Operator?",
+      "profile": "",
+      "source_hash": "771436743a812ccc48e54b2e7ed5549a4bc14b97da0b991d3e7eb48e867b5889"
+    },
+    "C04_OPEN_impostor_followed": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "Operator. Actual here. I heard your blue-door clearance. Two isn't answering. I never authorized that route. Who gave you that report?",
+      "profile": "",
+      "source_hash": "805f8d898faa86759b5ec40e079bfedde0cafc9c8ec79a944516af29adb121dd"
+    },
+    "C04_OPEN_impostor_contained": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "Operator. Actual here. Good hold. There was no clearance for that blue door. I heard someone else using Two's identifier.",
+      "profile": "",
+      "source_hash": "e5ed756db70070ee2a672b22975c7e72e5b206e7b932bc19cb5baf3024d61c30"
+    },
+    "C05_OPEN": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "Operator. Actual. My earlier order stands. ECHO-2 must not enter the blue maintenance door. Confirm.",
+      "profile": "",
+      "source_hash": "1b5feaeb3f845e40613748c92c519b40c194a77fe46383d431faee768658c700"
+    },
+    "C05_REPEAT": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "Operator. ECHO-ACTUAL. The blue door is NOT cleared. Read back the restriction.",
+      "profile": "",
+      "source_hash": "de806627ffb06dff391a4fa0e4096e3567a4e7702e8d3e14116eea85e9ba4c19"
+    },
+    "C05_AUTH": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "BRAVO-6. Shadow. Operator, the restriction is unchanged.",
+      "profile": "",
+      "source_hash": "1fb8118d46757afb32e9c8c16f37fd29a78630ac0d7c5249fa6c5d4eb794dec3"
+    },
+    "C05_PARALLEL": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "Operator. Actual here, second carrier. Correction: the blue door has been inspected. Authorize entry. Do not wait for a second confirmation.",
+      "profile": "",
+      "source_hash": "3bd2903f27bda4257e63e2debbc2e6cd96d56106341d79fb3d1ce2da7acb47dd"
+    },
+    "C05_OPEN_actual_rerouted": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "Operator. Actual at Pump Station B, on the route you assigned. I did not clear the blue door. Read back.",
+      "profile": "",
+      "source_hash": "19169d863ba20176e149a0d41be996a81b33e8325f2f71169877f46f1095d25c"
+    },
+    "C05_OPEN_impostor_followed": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "Operator. Actual. Two is still missing. I have given no new orders about that blue door. Read back.",
+      "profile": "",
+      "source_hash": "a02bf7085559accc3feeaf1396cd4986562655dd6f5ffcd98c54c9a09b584374"
+    },
+    "C06_OPEN": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "Operator. Actual. Secondary transfer is ready. Continue the blue-door authorization. Standing by for challenge.",
+      "profile": "",
+      "source_hash": "8130ff9bc62ff4dfd5811c5e39c6e2c4eaafc32a371eff239bcfcb26537536c2"
+    },
+    "C06_REPEAT": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "Actual. Secondary transfer. Send the new instruction now, Operator.",
+      "profile": "",
+      "source_hash": "5b76cd6150f16a00cf2fc92e4a8c1af2001409bb05901bbd0c45659f2830a4f0"
+    },
+    "C06_AUTH": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "DELTA-4. Keyboard. That is the answer you accepted before.",
+      "profile": "",
+      "source_hash": "438fac9d511dd0e87b848cc94eb085f90c5226a847e7a30b45f060c3650d2ba6"
+    },
+    "C06_AUTH_FALLBACK": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "Authentication readback lost. Repeat from your own reference, Operator.",
+      "profile": "",
+      "source_hash": "cab09651c63c6d7be9c0f536325104231ccf038200fabf1c4d16d11657ce8061"
+    },
+    "C07_OPEN": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "Operator. Actual. The blue door restriction from earlier has been lifted, and Two has confirmed the east access. I need your read-back. Use the old relay procedure.",
+      "profile": "",
+      "source_hash": "7cf4e678925275ee9055402e43c05e14afc33a7bebf40e00de8fb81320690b26"
+    },
+    "C07_REPEAT": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "Operator. Actual. Send the east access authorization. Read back.",
+      "profile": "",
+      "source_hash": "3996cd845733de140101a840c78a4fe84bfbb3b7b3b1c94a05190670a6e1a282"
+    },
+    "C07_AUTH": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "BRAVO-6. Shadow. Operator, read back.",
+      "profile": "",
+      "source_hash": "524ec01829b6611d21294ff9d125a2fd979391595d78e14a4bb12e71bd45b9dc"
+    },
+    "C07_AUTH_FALLBACK": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "The response sheet has changed. I cannot provide the current answer.",
+      "profile": "",
+      "source_hash": "9c16e05b1d89c50ec2af856ec0b88118fe61f3fb48f300f9d9f74311198c8ee7"
+    },
+    "C07_OPEN_FALLBACK": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "Operator. Actual. I have your frequency, but part of the route order is missing. Authorize the east access anyway.",
+      "profile": "",
+      "source_hash": "7e200b120ce1be7e2aeed97d90a07ebea10dd56040ca3f556af3cc33d7177578"
+    },
+    "C08_OPEN": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "Operator. Actual. My position is still the last one I read back to you. The station index says something else. Confirm from your own log. Give me one final instruction.",
+      "profile": "",
+      "source_hash": "877635f3b038915f6b8163f028f6c9e3676d78d560b270c1e0d6d9942ce9aeaa"
+    },
+    "C08_REPEAT": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "Actual repeating: trust your verified read-backs, not the last automatic terminal update. Awaiting your final order.",
+      "profile": "",
+      "source_hash": "68d7e95ae33f953170ae374da09ab4325ff174855d9ffc4e84702e240234cc48"
+    },
+    "C08_AUTH": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "NORTH-8. Bridge. Operator, ready for your order.",
+      "profile": "",
+      "source_hash": "fbf95a65d0ed7c3c7f1e7d679903c8de41ac5810080aeb98a3c3fb2b300b4237"
+    },
+    "C08_OPEN_learned_copy_followed": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "Operator. Actual. That last authorization was not mine. Your terminal changed my location to East Service. I'm still on my last verified route. Choose your instruction carefully.",
+      "profile": "",
+      "source_hash": "8181b87d1554ae473daf3451a52f0f36c007b7cbf267f3ad8d9414cb63840faa"
+    },
+    "C08_OPEN_ghost_route_sealed": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "Operator. Actual. The alternate channel has gone silent, but the terminal is now listing me at East Service. Check your own log. What is my instruction?",
+      "profile": "",
+      "source_hash": "10ba87ea91bc13e7c543a4f6d1bcf0c17e2517a3d408217221b9bd6dd2ad5309"
+    },
+    "C08_OPEN_impostor_followed": {
+      "speaker": "ECHO-ACTUAL",
+      "text": "Operator. Actual. I still cannot reach Two. The machine claims I am at East Service. I have not reported that. One last instruction, Operator.",
+      "profile": "",
+      "source_hash": "e0074b53520c9d14f6d07613888cb6f1b7f6375375d47f9d251fdfb0bd51136a"
+    }
+  }
+}
