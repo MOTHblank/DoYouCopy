@@ -1,14 +1,16 @@
 class_name RadioStatic
 extends Node
 
-## One small deterministic PCM loop. No allocation or random noise per frame.
+## Precomputed 0.37-second PCM loop; no per-frame sound synthesis.
 const RATE := 22050
 const FRAMES := 8192
 var playback: AudioStreamPlayer
+var quality := 0.0
+var voice_active := false
 
 func _ready() -> void:
 	playback = AudioStreamPlayer.new()
-	playback.volume_db = -27.0
+	playback.bus = "RadioStatic"
 	add_child(playback)
 	var bytes := PackedByteArray()
 	bytes.resize(FRAMES * 2)
@@ -21,19 +23,28 @@ func _ready() -> void:
 		var sample := int(clampf(previous * 0.28, -1.0, 1.0) * 32767.0)
 		bytes[i * 2] = sample & 255
 		bytes[i * 2 + 1] = (sample >> 8) & 255
-	var sample_stream := AudioStreamWAV.new()
-	sample_stream.format = AudioStreamWAV.FORMAT_16_BITS
-	sample_stream.mix_rate = RATE
-	sample_stream.stereo = false
-	sample_stream.data = bytes
-	sample_stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
-	sample_stream.loop_begin = 0
-	sample_stream.loop_end = FRAMES
-	playback.stream = sample_stream
+	var audio := AudioStreamWAV.new()
+	audio.format = AudioStreamWAV.FORMAT_16_BITS
+	audio.mix_rate = RATE
+	audio.stereo = false
+	audio.data = bytes
+	audio.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	audio.loop_begin = 0
+	audio.loop_end = FRAMES
+	playback.stream = audio
 	playback.play()
+	_refresh_volume()
 
-func set_signal_quality(quality: float) -> void:
+func set_signal_quality(value: float) -> void:
+	quality = clampf(value, 0.0, 1.0)
+	_refresh_volume()
+
+func set_voice_active(active: bool) -> void:
+	voice_active = active
+	_refresh_volume()
+
+func _refresh_volume() -> void:
 	if playback == null:
 		return
-	# Quiet enough that speech and important authentication words remain clear.
-	playback.volume_db = lerpf(-22.0, -47.0, clampf(quality, 0.0, 1.0))
+	var base_volume := lerpf(-23.0, -47.0, quality)
+	playback.volume_db = base_volume - (9.0 if voice_active else 0.0)

@@ -1,4 +1,4 @@
-> **Authored eight-contact Godot 4.7 campaign foundation:** The playable project now includes radio tuning, verification, GHOST learning, irreversible channel quarantine, and three ending families. Open `project.godot` and run the main scene. See [controls, scenario and current limitations](PLAYABLE_SLICE.md). Godot runtime validation and authored voice recordings remain unfinished.
+> **Authored eight-contact Godot 4.7 campaign foundation:** The playable project now includes radio tuning, verification, GHOST learning, irreversible channel quarantine, and three ending families. Open `project.godot` and run the main scene. See [controls, scenario and current limitations](PLAYABLE_SLICE.md). Godot runtime validation and final voice acting remain unfinished; automated authored preview-voice rendering is now configured.
 
 ---
 

@@ -1,0 +1,57 @@
+name: Render authored radio voices
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/render-voices.yml'
+      - 'tools/generate_voices.py'
+      - 'content/contacts/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: doyoucopy-voice-render
+  cancel-in-progress: false
+
+jobs:
+  voices:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install deterministic offline preview renderer
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq espeak-ng ffmpeg
+
+      - name: Render authored OGG voice clips
+        run: python3 tools/generate_voices.py --backend espeak --overwrite
+
+      - name: Verify audio is present and readable
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          manifest = json.loads(Path("content/voices/generated/manifest.json").read_text())
+          ids = manifest["clips"]
+          assert len(ids) >= 25, f"Only {len(ids)} voice lines were generated"
+          missing = [key for key in ids if not (Path("content/voices/generated") / (key + ".ogg")).is_file()]
+          assert not missing, f"Missing clips: {missing}"
+          print(f"{len(ids)} individual radio clips generated.")
+          PY
+
+      - name: Commit generated speech to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add content/voices/generated/*.ogg content/voices/generated/manifest.json
+          if ! git diff --cached --quiet; then
+            git commit -m "assets: render authored preview radio voices [skip ci]"
+            git push origin HEAD:main
+          fi

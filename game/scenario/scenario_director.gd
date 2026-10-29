@@ -6,6 +6,7 @@ signal phase_changed(phase: String)
 signal message_emitted(speaker: String, message: String, line_id: String)
 signal consequence_emitted(message: String)
 signal run_finished(report: String)
+signal opening_transcript_complete
 
 const CONTACTS: Array[Resource] = [
 	preload("res://content/contacts/contact_01_training.tres"),
@@ -24,6 +25,9 @@ var phase: String = "WAITING"
 var index: int = -1
 var contact: ContactDefinition
 var auth_requested: bool = false
+## False for test harnesses and transcript-only integration.
+## Main enables it and signals when every available voiced line is finished.
+var opening_audio_gate := false
 
 func setup(state_node: ScenarioState, radio_node: RadioConsole) -> void:
 	run_state = state_node
@@ -106,10 +110,17 @@ func _on_signal_acquired(_frequency: float) -> void:
 		_emit_message(String(contact.parallel_callsign), parallel, "%s_PARALLEL" % String(contact.id))
 	for fact in contact.learned_on_receive:
 		run_state.learn(fact, "%s:open_carrier" % String(contact.id))
-	_set_phase("VERIFYING")
+	if opening_audio_gate:
+		opening_transcript_complete.emit()
+	else:
+		_set_phase("VERIFYING")
+
+func opening_voice_finished() -> void:
+	if phase == "RECEIVING":
+		_set_phase("VERIFYING")
 
 func _on_signal_lost() -> void:
-	if phase != "VERIFYING":
+	if phase != "VERIFYING" and phase != "RECEIVING":
 		return
 	run_state.append_log("[STATION] Signal lost. Retune before transmitting.")
 	_set_phase("TUNING")

@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-"""Offline authored voice export for Do You Copy?.
+"""Offline authored radio-voice renderer. Never runs in the game process.
 
-Usage:
-    python tools/generate_voices.py --backend espeak
-    python tools/generate_voices.py --backend piper --actual-model model-a.onnx --echo2-model model-b.onnx
+Generate preview voices:
+    python tools/generate_voices.py --backend espeak --overwrite
+Use Piper models for final actors:
+    python tools/generate_voices.py --backend piper --actual-model actual.onnx --echo2-model two.onnx --overwrite
+Inspect the list without rendering:
+    python tools/generate_voices.py --dry-run
 
-Requires ffmpeg; espeak/espeak-ng for the espeak backend or Piper with two
-locally available models for the piper backend. Nothing runs at game runtime.
+The claimed identity selects the same voice for a real agent and its copy.
 """
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -20,87 +23,122 @@ ROOT = Path(__file__).resolve().parent.parent
 CONTACTS = ROOT / "content" / "contacts"
 DEST = ROOT / "content" / "voices" / "generated"
 
-def get_value(source: str, key: str) -> str:
-    pattern = rf"^{re.escape(key)}\s*=\s*(\"(?:\\.|[^\"])*\")\s*$"
-    found = re.search(pattern, source, re.MULTILINE)
-    return json.loads(found.group(1)) if found else ""
+VALUE = r'"(?:\\.|[^"\\])*"'
+
+def find_string(source: str, key: str) -> str:
+    match = re.search(rf"^{re.escape(key)}\s*=\s*({VALUE})\s*$", source, re.M)
+    return json.loads(match.group(1)) if match else ""
+
+def find_name(source: str, key: str) -> str:
+    match = re.search(rf'^{re.escape(key)}\s*=\s*&"([^"]+)"', source, re.M)
+    if not match:
+        raise ValueError(f"Missing {key}")
+    return match.group(1)
 
 def lines_for_contact(path: Path):
     source = path.read_text(encoding="utf-8")
-    id_match = re.search(r'^id\s*=\s*&"([^"]+)"', source, re.MULTILINE)
-    if not id_match:
-        raise ValueError(f"Missing contact ID: {path}")
-    contact_id = id_match.group(1)
-    claim_match = re.search(r'^claimed_callsign\s*=\s*&"([^"]+)"', source, re.MULTILINE)
-    if not claim_match:
-        raise ValueError(f"Missing claimed voice: {path}")
-    speaker = claim_match.group(1)
+    contact_id = find_name(source, "id")
+    speaker = find_name(source, "claimed_callsign")
+    if speaker not in ("ECHO-ACTUAL", "ECHO-2"):
+        raise ValueError(f"{contact_id}: unsupported agent voice {speaker}")
     clips = []
-    for attr, suffix in [
+    for attribute, suffix in (
         ("opening_line", "OPEN"),
         ("repeat_line", "REPEAT"),
         ("authentication_line", "AUTH"),
         ("fallback_authentication_line", "AUTH_FALLBACK"),
         ("fallback_opening", "OPEN_FALLBACK"),
         ("parallel_line", "PARALLEL"),
-    ]:
-        text = get_value(source, attr)
-        if text:
-            clips.append((f"{contact_id}_{suffix}", speaker, text))
-    branch_block = re.search(r"^branch_openings\s*=\s*\{(.*?)^\}", source, re.MULTILINE | re.DOTALL)
-    if branch_block:
-        for entry in re.finditer(r'^"([^"]+)"\s*:\s*(\"(?:\\.|[^\"])*\")', branch_block.group(1), re.MULTILINE):
-            flag, raw = entry.groups()
-            clips.append((f"{contact_id}_OPEN_{flag}", speaker, json.loads(raw)))
+    ):
+        message = find_string(source, attribute)
+        if message.strip():
+            clips.append((f"{contact_id}_{suffix}", speaker, message.strip()))
+    branches = re.search(r"^branch_openings\s*=\s*\{(.*?)^\}", source, re.M | re.S)
+    if branches:
+        for match in re.finditer(rf'^"([^"]+)"\s*:\s*({VALUE})', branches.group(1), re.M):
+            flag, quoted = match.groups()
+            message = json.loads(quoted).strip()
+            if message:
+                clips.append((f"{contact_id}_OPEN_{flag}", speaker, message))
     return clips
 
-def render_wav(backend: str, speaker: str, text: str, out: Path, args):
+def clip_manifest(clips, backend, models):
+    records = {}
+    for clip_id, speaker, message in clips:
+        if clip_id in records:
+            raise ValueError(f"Duplicate stable line ID {clip_id}")
+        profile = models.get(speaker, "espeak-default")
+        checksum = hashlib.sha256(
+            f"{speaker}\n{message}\n{backend}\n{profile}".encode("utf-8")
+        ).hexdigest()
+        records[clip_id] = {
+            "speaker": speaker, "text": message, "profile": profile,
+            "source_hash": checksum,
+        }
+    return {"schema": 1, "backend": backend, "clips": records}
+
+def render_wav(backend, speaker, message, target, models):
     if backend == "espeak":
-        app = shutil.which("espeak-ng") or shutil.which("espeak")
-        if not app:
-            raise RuntimeError("Install espeak-ng or espeak first.")
+        tool = shutil.which("espeak-ng") or shutil.which("espeak")
+        if not tool:
+            raise RuntimeError("Install espeak-ng or espeak to render preview audio.")
         voice = "en-us+m3" if speaker == "ECHO-ACTUAL" else "en-us+f3"
-        subprocess.run([app, "-v", voice, "-s", "135" if speaker == "ECHO-ACTUAL" else "159", "-w", str(out), text], check=True)
-    else:
-        model = args.actual_model if speaker == "ECHO-ACTUAL" else args.echo2_model
-        if not model:
-            raise RuntimeError("Provide both --actual-model and --echo2-model for Piper.")
-        app = shutil.which("piper")
-        if not app:
-            raise RuntimeError("Install Piper first.")
-        subprocess.run([app, "--model", model, "--output_file", str(out)], input=text.encode("utf-8"), check=True)
+        speed = "140" if speaker == "ECHO-ACTUAL" else "162"
+        subprocess.run([tool, "-v", voice, "-s", speed, "-w", str(target), message], check=True)
+        return
+    tool = shutil.which("piper")
+    if not tool:
+        raise RuntimeError("Install Piper before choosing --backend piper.")
+    model = models.get(speaker)
+    if not model:
+        raise RuntimeError(f"Missing Piper model for {speaker}")
+    subprocess.run([tool, "--model", model, "--output_file", str(target)],
+                   input=message.encode("utf-8"), check=True)
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--backend", choices=("espeak", "piper"), default="espeak")
-    parser.add_argument("--actual-model")
-    parser.add_argument("--echo2-model")
+    parser.add_argument("--actual-model", default="")
+    parser.add_argument("--echo2-model", default="")
     parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
-    if not shutil.which("ffmpeg"):
-        parser.error("ffmpeg is required to encode game clips.")
-    DEST.mkdir(parents=True, exist_ok=True)
+
     clips = []
     for path in sorted(CONTACTS.glob("contact_*.tres")):
         clips.extend(lines_for_contact(path))
     if not clips:
-        parser.error("No authored lines found.")
+        parser.error("No authored radio dialogue was found.")
+    models = {"ECHO-ACTUAL": args.actual_model, "ECHO-2": args.echo2_model}
+    if args.backend == "piper" and not all(models.values()):
+        parser.error("Piper requires --actual-model and --echo2-model.")
+    manifest = clip_manifest(clips, args.backend, models)
+    print(f"{len(clips)} voice lines for 2 identities; {len(list(CONTACTS.glob('contact_*.tres')))} contacts.")
+    if args.dry_run:
+        for clip_id, speaker, _ in clips:
+            print(f"{clip_id}: {speaker}")
+        return
+    if not shutil.which("ffmpeg"):
+        parser.error("Install ffmpeg to encode .ogg audio.")
+    DEST.mkdir(parents=True, exist_ok=True)
     created = 0
-    with tempfile.TemporaryDirectory() as folder:
-        for line_id, speaker, text in clips:
-            target = DEST / (line_id + ".ogg")
-            if target.exists() and not args.overwrite:
+    with tempfile.TemporaryDirectory() as work:
+        for clip_id, speaker, message in clips:
+            destination = DEST / f"{clip_id}.ogg"
+            if destination.exists() and not args.overwrite:
                 continue
-            wav = Path(folder) / (line_id + ".wav")
-            render_wav(args.backend, speaker, text, wav, args)
+            wave = Path(work) / f"{clip_id}.wav"
+            render_wav(args.backend, speaker, message, wave, models)
             subprocess.run([
                 "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
-                "-i", str(wav), "-ar", "24000", "-ac", "1",
-                "-c:a", "libvorbis", "-qscale:a", "4", str(target)
+                "-i", str(wave), "-ar", "24000", "-ac", "1",
+                "-c:a", "libvorbis", "-qscale:a", "3", str(destination)
             ], check=True)
             created += 1
-    print(f"Generated {created} clips ({len(clips)} authored line variants).")
-    print("Clips are local until you explicitly commit them. Never auto-regenerate in the game.")
+    (DEST / "manifest.json").write_text(
+        json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    print(f"Rendered {created} audio clips and updated manifest.json.")
 
 if __name__ == "__main__":
     main()

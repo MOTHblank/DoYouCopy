@@ -7,6 +7,7 @@ const SAMPLE_RATE := 22050
 
 func _ready() -> void:
 	output = AudioStreamPlayer.new()
+	output.bus = "Interface"
 	output.volume_db = -13.0
 	add_child(output)
 

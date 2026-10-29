@@ -39,11 +39,12 @@ If C07's A-ALT channel was sealed, C08 still takes place on A-PRIMARY. A second 
 - `WorkstationRoom`: procedural office, projected spectrum/terminal/map displays, physical radio knobs, response keys, protected quarantine control, and subtly changing workstation lighting.
 - `PlayerRig` / `OperatorArm`: ray selection, knob dragging, and a simple procedural arm animation. This is a temporary stand-in for the intended Blender rig, not a finished rigged character animation.
 - `RadioStatic`: small precomputed looping noise sample; dynamically quieter as reception improves. It avoids expensive per-frame audio generation and keeps critical radio words intelligible.
-- `RadioVoice`: optional playback of authored offline OGG clips keyed by stable IDs, **never runtime TTS**; text log always remains available.
+- `RadioVoice`: queued playback of authored offline OGG clips keyed by stable IDs, **never runtime TTS**; text log always remains available. In normal game mode, the opening narration completes before operational choices unlock.
+- `AudioMixer`: separate Voice, Static and Interface buses; band-limited voice with conservative compression. Static is ducked during transmissions.
 
 ## Current limitations
 
-Runtime validation in Godot remains necessary. The repository has a headless scenario verification script but it has not been run in the current authoring environment. Actual OGG voice recordings have **not** yet been committed; see [voice generation](docs/VOICE_PIPELINE.md). State Charts and Dialogue Manager integration, the final Blender-rigged arm, voice DSP buses and a complete 25–35-minute audio/pacing pass remain future integration/polish. The current radio static and procedural arm are early presentation substitutes, not shipped-quality replacements. The contact content supplies the eight major beats, not a final timed release.
+Runtime validation in Godot remains necessary. The repository has a headless scenario verification script but it has not been run in the current authoring environment. An automatic offline-rendering workflow now builds **preview** voice clips from the authored contact resources; see [voice generation](docs/VOICE_PIPELINE.md). Check the GitHub Actions run and the generated-voices directory for successful delivery. Final acting and listening review are still outstanding. State Charts and Dialogue Manager integration, the final Blender-rigged arm, voice DSP buses and a complete 25–35-minute audio/pacing pass remain future integration/polish. The current radio static and procedural arm are early presentation substitutes, not shipped-quality replacements. The contact content supplies the eight major beats, not a final timed release.
 
 Run the headless scenario harness after importing the project:
 

@@ -279,6 +279,8 @@ func _refresh() -> void:
 		next_button.text = "CONTINUE / NEXT CARRIER"
 	next_button.disabled = not (complete or director.phase == "RESOLVING")
 	var active := director.phase == "VERIFYING"
+	if director.phase == "RECEIVING":
+		status_label.text = "RECEIVING / DO NOT TRANSMIT"
 	repeat_button.disabled = not active
 	auth_button.disabled = not active or director.auth_requested
 	auth_button.text = "A / AUTHENTICATE" if not director.auth_requested else "AUTH RESPONSE LOGGED"
