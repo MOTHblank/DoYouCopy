@@ -1,3 +1,7 @@
+> **Playable prototype (Godot 4.7):** The first four-contact vertical slice is now in this repository. Open `project.godot` and run the main scene. See [controls, architecture and current limitations](PLAYABLE_SLICE.md). The scenario remains a work in progress and does not yet include voice recordings or all eight major contacts.
+
+---
+
 # Do You Copy?
 
 > A short radio-operator horror game about deciding whether the voice on the other end is really who it claims to be.

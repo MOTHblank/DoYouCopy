@@ -1,0 +1,30 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://game/main/main.gd" id="1"]
+[ext_resource type="Script" path="res://game/scenario/scenario_state.gd" id="2"]
+[ext_resource type="Script" path="res://game/scenario/scenario_director.gd" id="3"]
+[ext_resource type="Script" path="res://game/workstation/radio/radio_console.gd" id="4"]
+[ext_resource type="Script" path="res://game/room/workstation_room.gd" id="5"]
+[ext_resource type="Script" path="res://game/player/player_rig.gd" id="6"]
+[ext_resource type="Script" path="res://game/workstation/workstation_hud.gd" id="7"]
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1")
+
+[node name="ScenarioState" type="Node" parent="."]
+script = ExtResource("2")
+
+[node name="RadioConsole" type="Node" parent="."]
+script = ExtResource("4")
+
+[node name="ScenarioDirector" type="Node" parent="."]
+script = ExtResource("3")
+
+[node name="WorkstationRoom" type="Node3D" parent="."]
+script = ExtResource("5")
+
+[node name="PlayerRig" type="Node3D" parent="."]
+script = ExtResource("6")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("7")

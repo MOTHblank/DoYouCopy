@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="ContactDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/scenario/contact_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"C02"
+frequency = 104.7
+cleanup_target = 0.34
+channel = &"B-PRIMARY"
+claimed_callsign = &"ECHO-2"
+actual_source = &"ECHO-2"
+opening_line = "Hey, Operator, Two here. Pump B, west access. Can I cross to the East Service Room, or wait? This place smells like wet wiring."
+repeat_line = "Two here, Pump B. East service route or hold? Actual knows I'm at the pump."
+last_reported_location = "Pump Station B"
+objective = "Confirm ECHO-2's position and choose whether to send them east."
+challenge_id = &"TIDE-2"
+authentication_line = "TIDE-2? River. Always a river."
+possible_actions = PackedStringArray("HOLD", "PROCEED")
+learned_on_receive = PackedStringArray("echo2_voice", "echo2_callsign", "echo2_pump_location")
+learned_on_authentication = PackedStringArray("tide2_answer")
+action_outcomes = {
+"HOLD": PackedStringArray("flag:two_held", "trust:ECHO-2:-1"),
+"PROCEED": PackedStringArray("flag:two_east", "location:ECHO-2:East Service", "trust:ECHO-2:1")
+}
+consequence_text = {
+"HOLD": "Two reports a hold at Pump Station B. The map keeps the last verified position.",
+"PROCEED": "Two crosses towards East Service. The map changes only because an authorized instruction was sent."
+}

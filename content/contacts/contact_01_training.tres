@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="ContactDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/scenario/contact_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"C01"
+frequency = 101.3
+channel = &"A-PRIMARY"
+claimed_callsign = &"ECHO-ACTUAL"
+actual_source = &"ECHO-ACTUAL"
+opening_line = "Operator. ECHO-ACTUAL at Relay. Morning check. Read my identifier and confirm my route to the junction."
+repeat_line = "ECHO-ACTUAL, at Relay. Operator, awaiting a route instruction. Read back."
+last_reported_location = "Relay"
+objective = "Verify the team lead. Route towards the Junction or hold at Relay."
+challenge_id = &"DELTA-4"
+authentication_line = "DELTA-4 response: keyboard. Operator, copy?"
+possible_actions = PackedStringArray("HOLD", "PROCEED")
+learned_on_receive = PackedStringArray("actual_voice", "actual_callsign")
+learned_on_authentication = PackedStringArray("delta4_answer")
+action_outcomes = {
+"HOLD": PackedStringArray("flag:training_held", "trust:ECHO-ACTUAL:-1"),
+"PROCEED": PackedStringArray("flag:training_proceeded", "location:ECHO-ACTUAL:Junction", "trust:ECHO-ACTUAL:1")
+}
+consequence_text = {
+"HOLD": "Actual acknowledges the hold at Relay. Your first instruction is on the record.",
+"PROCEED": "Actual reads back PROCEED and moves towards Junction. Position updated from a verified order."
+}

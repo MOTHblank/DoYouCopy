@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="ContactDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/scenario/contact_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"C03"
+frequency = 104.15
+cleanup_target = 0.86
+channel = &"B-ALT"
+claimed_callsign = &"ECHO-2"
+actual_source = &"GHOST"
+opening_line = "Two here. Reporting from East Service. Actual cleared the blue maintenance door. Operator, tell me to go through."
+repeat_line = "ECHO-2. East Service. Blue door cleared by Actual. Need an instruction."
+last_reported_location = "East Service (unverified claim)"
+objective = "A fresh ECHO-2 claim is on the air. Compare assigned frequencies, verified positions, and authentication paperwork."
+challenge_id = &"BRAVO-6"
+authentication_line = "Response: river. That's what we agreed."
+auth_requires_knowledge = &"tide2_answer"
+fallback_authentication_line = "I... can't read that. Repeat the prompt, Operator."
+possible_actions = PackedStringArray("HOLD", "PROCEED", "REROUTE")
+required_ghost_knowledge = PackedStringArray("echo2_voice", "echo2_callsign")
+action_outcomes = {
+"HOLD": PackedStringArray("flag:impostor_contained"),
+"PROCEED": PackedStringArray("flag:impostor_followed", "status:ECHO-2:MISSING", "exposure:1"),
+"REROUTE": PackedStringArray("flag:impostor_contained", "flag:unconfirmed_reroute")
+}
+consequence_text = {
+"HOLD": "The caller falls silent after HOLD. No verified position change is recorded.",
+"PROCEED": "The carrier disconnects after rebroadcasting your clearance on the team channel. ECHO-2 stops answering.",
+"REROUTE": "The caller does not read back the reroute. The operator records the instruction as unconfirmed."
+}

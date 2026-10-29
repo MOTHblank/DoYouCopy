@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="ContactDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/scenario/contact_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"C04"
+frequency = 101.3
+cleanup_target = 0.42
+channel = &"A-PRIMARY"
+claimed_callsign = &"ECHO-ACTUAL"
+actual_source = &"ECHO-ACTUAL"
+opening_line = "Operator. Actual. Nobody gave clearance for the blue door. Someone transmitted on an unassigned carrier. Keep Two away from it."
+repeat_line = "Actual, repeating: no blue-door clearance. Do not trust that carrier. Operator, read back."
+last_reported_location = "Relay / Junction"
+objective = "Use the verified team lead's warning to stabilize the field response."
+challenge_id = &"BRAVO-6"
+authentication_line = "BRAVO-6. Shadow. Is that confirmed, Operator?"
+possible_actions = PackedStringArray("HOLD", "PROCEED", "REROUTE")
+branch_openings = {
+"impostor_followed": "Operator. Actual here. I heard your blue-door clearance. Two isn't answering. I never authorized that route. Who gave you that report?",
+"impostor_contained": "Operator. Actual here. Good hold. There was no clearance for that blue door. I heard someone else using Two's identifier."
+}
+action_outcomes = {
+"HOLD": PackedStringArray("flag:actual_reconciled", "trust:ECHO-ACTUAL:1"),
+"PROCEED": PackedStringArray("flag:actual_advanced", "location:ECHO-ACTUAL:Junction"),
+"REROUTE": PackedStringArray("flag:actual_rerouted", "location:ECHO-ACTUAL:Pump Station B")
+}
+consequence_text = {
+"HOLD": "Actual acknowledges a secure hold. The incident is filed for the next shift.",
+"PROCEED": "Actual continues along the verified service route. A follow-up contact is expected.",
+"REROUTE": "Actual diverts to the pump station. The map and shift report record the change."
+}
