@@ -103,9 +103,13 @@ func _monitor(name: String, center: Vector3, width: float, height: float, displa
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	add_child(viewport)
 	viewport.add_child(display)
-	display.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# These Controls are rendered at a fixed resolution inside SubViewport.
+	# Do not combine opposing stretch anchors with explicit size: that caused
+	# Godot 4.7 to warn and could overwrite the monitor's intended dimensions.
+	display.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
 	display.position = Vector2.ZERO
-	display.size = Vector2(float(viewport.size.x), float(viewport.size.y))
+	display.custom_minimum_size = Vector2(float(viewport.size.x), float(viewport.size.y))
+	display.size = display.custom_minimum_size
 	var quad := QuadMesh.new()
 	quad.size = Vector2(width, height)
 	var screen := MeshInstance3D.new()
