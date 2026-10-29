@@ -100,7 +100,7 @@ func apply_effect(effect: String) -> void:
 func ending_family() -> String:
 	# An unquarantined alternate route can also be contained by consistently
 	# rejecting the learned copy and rerouting the last verified agent.
-	var sealed := quarantined_channels.has("A-ALT")
+	var sealed: bool = quarantined_channels.has("A-ALT")
 	if decisions.get("C08", "") == "PROCEED":
 		# A final blind clearance compromises even an otherwise secure shift.
 		return "OPEN_LINE"
@@ -108,7 +108,7 @@ func ending_family() -> String:
 		# HOLD and REROUTE protect lives, but do not physically isolate
 		# an alternate carrier. Only a sealed route is contained.
 		return "OPEN_LINE"
-	var agent_lost := (
+	var agent_lost: bool = (
 		agent_status["ECHO-ACTUAL"] != "AVAILABLE"
 		or agent_status["ECHO-2"] != "AVAILABLE"
 	)
