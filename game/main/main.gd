@@ -26,6 +26,11 @@ func _ready() -> void:
 	player.station_object_selected.connect(hud.show_station_object)
 	player.station_control_adjusted.connect(hud.adjust_station)
 	hud.action_transmitted.connect(player.animate_station_action)
+	hud.opening_skip_requested.connect(func() -> void:
+		if director.phase == "RECEIVING":
+			radio_voice.stop_all()
+			director.opening_voice_finished()
+	)
 	radio.tuning_changed.connect(func(_freq: float) -> void: _sync_screens())
 	radio.quality_changed.connect(func(quality: float) -> void:
 		radio_static.set_signal_quality(quality)

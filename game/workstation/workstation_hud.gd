@@ -2,6 +2,7 @@ class_name WorkstationHUD
 extends CanvasLayer
 
 signal action_transmitted(action: String)
+signal opening_skip_requested
 
 ## Readable operator UI complements the in-world screens; it never judges identity.
 var director: ScenarioDirector
@@ -280,7 +281,7 @@ func _refresh() -> void:
 	next_button.disabled = not (complete or director.phase == "RESOLVING")
 	var active := director.phase == "VERIFYING"
 	if director.phase == "RECEIVING":
-		status_label.text = "RECEIVING / DO NOT TRANSMIT"
+		status_label.text = "RECEIVING / SPACE SKIPS VOICE"
 	repeat_button.disabled = not active
 	auth_button.disabled = not active or director.auth_requested
 	auth_button.text = "A / AUTHENTICATE" if not director.auth_requested else "AUTH RESPONSE LOGGED"
@@ -434,9 +435,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_Q:
 			_request_quarantine_confirmation()
 		KEY_SPACE:
-			_transmit_action()
+			if director.phase == "RECEIVING":
+				opening_skip_requested.emit()
+			else:
+				_transmit_action()
 		KEY_ENTER:
-			if director.phase == "VERIFYING":
+			if director.phase == "RECEIVING":
+				opening_skip_requested.emit()
+			elif director.phase == "VERIFYING":
 				_transmit_action()
 			elif director.phase == "RESOLVING":
 				director.advance()

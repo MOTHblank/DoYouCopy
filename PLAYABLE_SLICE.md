@@ -11,7 +11,7 @@ The GitHub main branch contains a Godot 4.7 project with eight authored major ra
 - **Frequency box + cleanup slider**: acquire and clean the incoming carrier. Normal acquisition is intentionally short.
 - **R / A**: REPEAT / AUTHENTICATE.
 - **1 / 2 / 3**: select HOLD / PROCEED / REROUTE. Selection is **not** transmission.
-- **Space / Enter / microphone**: send the selected instruction. The operator arm reaches for the microphone. The lower-left controls provide the same interaction without pixel-perfect 3D targeting.
+- **Space / Enter / microphone**: send the selected instruction once the incoming message is complete. During RECEIVING, **Space / Enter** skips the preview recording; its full text remains in the communication log. The operator arm reaches for the microphone. The lower-left controls provide the same interaction without pixel-perfect 3D targeting.
 - **Q**: request quarantine after the safety guard unlocks. A **confirmation dialog** shows the channel and whether a real agent relies on it. Up to two channels can be sealed; this cannot be undone.
 - **Enter**: advance after a consequence; restart from the ending report.
 - **Reference desk**: terminal, staged authentication sheets, verified map, and a communication log remain independently inspectable. The wall map is also drawn in code with verified agent positions.

@@ -39,7 +39,7 @@ jobs:
 
       - name: Complete campaign scenario harness
         run: |
-          /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . \
+          timeout 75 /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . \
             --script res://tests/scenario/run_campaign.gd
 
       - name: Main scene boot smoke check
