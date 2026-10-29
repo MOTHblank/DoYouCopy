@@ -8,18 +8,26 @@ extends Node3D
 @onready var hud: WorkstationHUD = $HUD
 var station_audio: StationAudio
 var radio_voice: RadioVoice
+var radio_static: RadioStatic
 
 func _ready() -> void:
 	station_audio = StationAudio.new()
 	add_child(station_audio)
 	radio_voice = RadioVoice.new()
 	add_child(radio_voice)
+	radio_static = RadioStatic.new()
+	add_child(radio_static)
 	director.setup(run_state, radio)
 	hud.bind(director, radio, run_state)
 	player.station_object_selected.connect(hud.show_station_object)
-	player.frequency_wheel.connect(radio.adjust_frequency)
+	player.station_control_adjusted.connect(hud.adjust_station)
+	hud.action_transmitted.connect(player.animate_station_action)
 	radio.tuning_changed.connect(func(_freq: float) -> void: _sync_screens())
-	radio.quality_changed.connect(func(_quality: float) -> void: _sync_screens())
+	radio.quality_changed.connect(func(quality: float) -> void:
+		radio_static.set_signal_quality(quality)
+		radio_voice.set_signal_quality(quality)
+		_sync_screens()
+	)
 	radio.signal_acquired.connect(func(_freq: float) -> void: station_audio.cue("acquired"))
 	director.contact_started.connect(func(_contact: ContactDefinition, _n: int, _total: int) -> void:
 		radio_voice.stop_all()
@@ -31,8 +39,14 @@ func _ready() -> void:
 		if id.contains("_AUTH"):
 			station_audio.cue("auth")
 	)
-	director.consequence_emitted.connect(func(_line: String) -> void: station_audio.cue("decision"))
-	director.run_finished.connect(func(_report: String) -> void: radio_voice.stop_all())
+	director.consequence_emitted.connect(func(_line: String) -> void:
+		radio_voice.stop_all()
+		station_audio.cue("decision")
+	)
+	director.run_finished.connect(func(_report: String) -> void:
+		radio_voice.stop_all()
+		radio_static.set_signal_quality(1.0)
+	)
 	director.begin_run()
 
 func _sync_screens() -> void:

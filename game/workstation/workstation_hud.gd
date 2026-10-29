@@ -1,6 +1,8 @@
 class_name WorkstationHUD
 extends CanvasLayer
 
+signal action_transmitted(action: String)
+
 ## Readable operator UI complements the in-world screens; it never judges identity.
 var director: ScenarioDirector
 var radio: RadioConsole
@@ -21,6 +23,8 @@ var repeat_button: Button
 var auth_button: Button
 var next_button: Button
 var quarantine_button: Button
+var transmit_button: Button
+var selected_action: String = ""
 var quarantine_confirmation: ConfirmationDialog
 var active_contact: ContactDefinition
 var last_message: String = "Waiting for a carrier."
@@ -108,7 +112,7 @@ func _build_ui() -> void:
 	banner.add_child(header)
 	_text(header, "   ECHO / COMMUNICATIONS", 21, "#e7cf9b", false)
 	phase_label = _text(header, "WAITING", 17, "#a9dbcd", false)
-	_text(header, "RMB DRAG: LOOK   |   LMB: INSPECT   |   WHEEL: TUNE", 13, "#a1b9b3", false)
+	_text(header, "RMB: LOOK  |  LMB: OPERATE  |  WHEEL: KNOB  |  SPACE: TRANSMIT", 12, "#a1b9b3", false)
 
 	var left := _panel(canvas, 14, 72, 356, -14, 0, 0, 0, 1)
 	_text(left, "RECEIVER  /  01", 22, "#e7cf9b")
@@ -154,11 +158,12 @@ func _build_ui() -> void:
 	left.add_child(action_row)
 	for action in ["HOLD", "PROCEED", "REROUTE"]:
 		var selected := StringName(action)
-		var button := _button(action_row, action, func() -> void: director.decide(selected))
+		var button := _button(action_row, action, func() -> void: _choose_action(String(selected)))
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		action_buttons[action] = button
+	transmit_button = _button(left, "SPACE / SELECT AN INSTRUCTION", func() -> void: _transmit_action())
 	quarantine_button = _button(left, "CHANNEL QUARANTINE / LOCKED", func() -> void: _request_quarantine_confirmation())
-	_text(left, "Quarantine is irreversible. Introduced later in the campaign.", 12, "#b4a18b")
+	_text(left, "Quarantine is irreversible; its guard unlocks later.", 12, "#b4a18b")
 	next_button = _button(left, "CONTINUE / NEXT CARRIER", func() -> void:
 		if complete:
 			director.begin_run()
@@ -173,6 +178,8 @@ func _build_ui() -> void:
 	quarantine_confirmation.confirmed.connect(func() -> void:
 		if director != null:
 			director.quarantine_current()
+			if director.phase == "RESOLVING":
+				action_transmitted.emit("quarantine")
 	)
 	add_child(quarantine_confirmation)
 
@@ -215,6 +222,7 @@ func _contact_started(contact: ContactDefinition, number: int, total: int) -> vo
 	active_contact = contact
 	last_message = "Search for the active carrier; compare it to the assigned frequency."
 	result_message = ""
+	selected_action = ""
 	contact_label.text = "CONTACT %02d / %02d    SEEKING CARRIER" % [number, total]
 	objective_label.text = "Acquire the carrier, then verify the caller against independent records."
 	_refresh()
@@ -275,7 +283,12 @@ func _refresh() -> void:
 	auth_button.disabled = not active or director.auth_requested
 	auth_button.text = "A / AUTHENTICATE" if not director.auth_requested else "AUTH RESPONSE LOGGED"
 	for action in action_buttons.keys():
-		action_buttons[action].disabled = not active or active_contact == null or not active_contact.possible_actions.has(str(action))
+		var allowed := active and active_contact != null and active_contact.possible_actions.has(str(action))
+		var button: Button = action_buttons[action]
+		button.disabled = not allowed
+		button.text = ("> " if selected_action == str(action) else "") + str(action)
+	transmit_button.disabled = not active or selected_action.is_empty()
+	transmit_button.text = ("SPACE / TRANSMIT " + selected_action) if not selected_action.is_empty() else "SPACE / SELECT AN INSTRUCTION"
 	var can_seal := (
 		active and active_contact != null
 		and run_state.has_flag("quarantine_available")
@@ -287,6 +300,35 @@ func _refresh() -> void:
 		"SEAL %s / IRREVERSIBLE" % String(active_contact.channel)
 		if can_seal else "CHANNEL QUARANTINE / LOCKED"
 	)
+
+func _choose_action(action: String) -> void:
+	if director == null or director.phase != "VERIFYING" or active_contact == null:
+		return
+	if not active_contact.possible_actions.has(action):
+		return
+	selected_action = action
+	latest_label.text = "SELECTED: %s. Use MICROPHONE / SPACE to transmit." % action
+	_refresh()
+
+func _transmit_action() -> void:
+	if director == null or director.phase != "VERIFYING":
+		return
+	if selected_action.is_empty():
+		latest_label.text = "Choose HOLD, PROCEED or REROUTE first."
+		return
+	var action := selected_action
+	director.decide(StringName(action))
+	if director.phase == "RESOLVING":
+		action_transmitted.emit("microphone")
+
+func adjust_station(control: String, amount: float) -> void:
+	if radio == null:
+		return
+	if control == "cleanup":
+		radio.set_cleanup(radio.cleanup + amount * 0.015)
+		cleanup_input.set_value_no_signal(radio.cleanup)
+	else:
+		radio.adjust_frequency(amount)
 
 func _request_quarantine_confirmation() -> void:
 	if director == null or director.phase != "VERIFYING" or active_contact == null:
@@ -312,11 +354,24 @@ func show_station_object(action: String) -> void:
 			tabs.select(0)
 		"map":
 			tabs.select(2)
-		"spectrum", "radio":
+		"spectrum", "radio", "frequency":
 			frequency_input.grab_focus()
+		"cleanup":
+			cleanup_input.grab_focus()
+		"repeat":
+			if director != null:
+				director.request_repeat()
+		"authenticate":
+			if director != null:
+				director.request_authentication()
+		"hold":
+			_choose_action("HOLD")
+		"proceed":
+			_choose_action("PROCEED")
+		"reroute":
+			_choose_action("REROUTE")
 		"microphone":
-			if director != null and director.phase == "RESOLVING":
-				director.advance()
+			_transmit_action()
 		"quarantine":
 			_request_quarantine_confirmation()
 	_update_evidence()
@@ -369,15 +424,19 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_A:
 			director.request_authentication()
 		KEY_1:
-			director.decide(&"HOLD")
+			_choose_action("HOLD")
 		KEY_2:
-			director.decide(&"PROCEED")
+			_choose_action("PROCEED")
 		KEY_3:
-			director.decide(&"REROUTE")
+			_choose_action("REROUTE")
 		KEY_Q:
 			_request_quarantine_confirmation()
+		KEY_SPACE:
+			_transmit_action()
 		KEY_ENTER:
-			if director.phase == "RESOLVING":
+			if director.phase == "VERIFYING":
+				_transmit_action()
+			elif director.phase == "RESOLVING":
 				director.advance()
 			elif complete:
 				director.begin_run()

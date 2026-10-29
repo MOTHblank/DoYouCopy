@@ -5,14 +5,16 @@ The GitHub main branch contains a Godot 4.7 project with eight authored major ra
 ## Operator controls
 
 - **Right-mouse drag**: constrained seated camera look.
-- **Left-click**: inspect equipment or use the readable UI.
-- **Mouse wheel / Up / Down**: radio tuning in 0.05 MHz steps.
+- **Left-click**: inspect paper/terminal/map, select a response, operate the microphone, or press the physical REPEAT / AUTH buttons.
+- **Drag the physical radio knobs**: adjust frequency or cleanup. The last selected knob also receives the mouse wheel.
+- **Mouse wheel / Up / Down**: frequency tuning (0.05 MHz steps when focused on the frequency knob).
 - **Frequency box + cleanup slider**: acquire and clean the incoming carrier. Normal acquisition is intentionally short.
 - **R / A**: REPEAT / AUTHENTICATE.
-- **1 / 2 / 3**: HOLD / PROCEED / REROUTE. Available choices are authored per contact.
+- **1 / 2 / 3**: select HOLD / PROCEED / REROUTE. Selection is **not** transmission.
+- **Space / Enter / microphone**: send the selected instruction. The operator arm reaches for the microphone. The lower-left controls provide the same interaction without pixel-perfect 3D targeting.
 - **Q**: request quarantine after the safety guard unlocks. A **confirmation dialog** shows the channel and whether a real agent relies on it. Up to two channels can be sealed; this cannot be undone.
 - **Enter**: advance after a consequence; restart from the ending report.
-- **Reference desk**: terminal, timed authentication sheets, verified map, and a communication log remain independently inspectable.
+- **Reference desk**: terminal, staged authentication sheets, verified map, and a communication log remain independently inspectable. The wall map is also drawn in code with verified agent positions.
 
 ## Eight-contact campaign (design spoilers)
 
@@ -34,15 +36,27 @@ If C07's A-ALT channel was sealed, C08 still takes place on A-PRIMARY. A second 
 - `ScenarioState`: verified field positions, asymmetric agent statuses/trust, permanent channel seals, bounded GHOST knowledge with provenance, flags, operator choices, and ending resolution.
 - `RadioConsole`: frequency and signal cleanup only. It does not know whether a caller is authentic.
 - `WorkstationHUD`: readable diegetic reference and controls. The terminal can present a false *synchronized* location; the reference map continues to show the real verified location.
-- `WorkstationRoom`: procedural office, projected spectrum/terminal displays, protective quarantine control, and staged lighting.
+- `WorkstationRoom`: procedural office, projected spectrum/terminal/map displays, physical radio knobs, response keys, protected quarantine control, and subtly changing workstation lighting.
+- `PlayerRig` / `OperatorArm`: ray selection, knob dragging, and a simple procedural arm animation. This is a temporary stand-in for the intended Blender rig, not a finished rigged character animation.
+- `RadioStatic`: small precomputed looping noise sample; dynamically quieter as reception improves. It avoids expensive per-frame audio generation and keeps critical radio words intelligible.
 - `RadioVoice`: optional playback of authored offline OGG clips keyed by stable IDs, **never runtime TTS**; text log always remains available.
 
 ## Current limitations
 
-Runtime validation in Godot remains necessary. The repository has a headless scenario verification script but it has not been run in the current authoring environment. Actual OGG voice recordings have **not** yet been committed; see [voice generation](docs/VOICE_PIPELINE.md). State Charts, Dialogue Manager, a first-person rigged arm, radio bus DSP and a complete 25–35-minute audio/pacing pass remain future integration/polish. The contact content supplies the eight major beats, not a final timed release.
+Runtime validation in Godot remains necessary. The repository has a headless scenario verification script but it has not been run in the current authoring environment. Actual OGG voice recordings have **not** yet been committed; see [voice generation](docs/VOICE_PIPELINE.md). State Charts and Dialogue Manager integration, the final Blender-rigged arm, voice DSP buses and a complete 25–35-minute audio/pacing pass remain future integration/polish. The current radio static and procedural arm are early presentation substitutes, not shipped-quality replacements. The contact content supplies the eight major beats, not a final timed release.
 
 Run the headless scenario harness after importing the project:
 
 ```shell
 godot --headless --path . --script res://tests/scenario/run_campaign.gd
 ```
+
+## Local smoke checks
+
+The source-level validator reports missing `res://` files, duplicate contact IDs and invalid action references without requiring Godot:
+
+```shell
+python tools/validate_content.py
+```
+
+The existing headless Godot scenario harness exercises the scenario flow and endings, but must still be run in a Godot installation. This repository was edited remotely without a Godot executable in the authoring environment, so an actual runtime/editor check has **not** been performed.

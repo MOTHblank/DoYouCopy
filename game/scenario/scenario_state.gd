@@ -101,16 +101,12 @@ func ending_family() -> String:
 	# An unquarantined alternate route can also be contained by consistently
 	# rejecting the learned copy and rerouting the last verified agent.
 	var sealed := quarantined_channels.has("A-ALT")
-	var disciplined := (
-		decisions.get("C07", "") == "HOLD"
-		and decisions.get("C08", "") == "REROUTE"
-	)
-	var ghost_contained := sealed or disciplined
 	if decisions.get("C08", "") == "PROCEED":
-		# The final automatic location clearance reopens a route despite
-		# incompatible evidence, even after an earlier seal.
+		# A final blind clearance compromises even an otherwise secure shift.
 		return "OPEN_LINE"
-	if not ghost_contained:
+	if not sealed:
+		# HOLD and REROUTE protect lives, but do not physically isolate
+		# an alternate carrier. Only a sealed route is contained.
 		return "OPEN_LINE"
 	var agent_lost := (
 		agent_status["ECHO-ACTUAL"] != "AVAILABLE"

@@ -2,12 +2,15 @@ class_name PlayerRig
 extends Node3D
 
 signal station_object_selected(action: String)
-signal frequency_wheel(steps: float)
+signal station_control_adjusted(control: String, amount: float)
 
 var camera: Camera3D
+var arm: OperatorArm
 var yaw: float = 0.0
 var pitch: float = -0.14
 var dragging_view: bool = false
+var dragging_control: bool = false
+var active_control: String = "frequency"
 
 func _ready() -> void:
 	position = Vector3(0, 1.62, 1.78)
@@ -15,22 +18,46 @@ func _ready() -> void:
 	camera.current = true
 	camera.fov = 82.0
 	add_child(camera)
+	arm = OperatorArm.new()
+	camera.add_child(arm)
 	_update_view()
+
+func _input(event: InputEvent) -> void:
+	# Release always reaches the rig even if the pointer moves over UI.
+	# This prevents a knob or camera drag from remaining latched.
+	if event is InputEventMouseButton and not event.pressed:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			dragging_control = false
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			dragging_view = false
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_RIGHT:
-			dragging_view = event.pressed
-		elif event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-			_interact_at_pointer()
-		elif event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			frequency_wheel.emit(1.0)
-		elif event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			frequency_wheel.emit(-1.0)
-	elif event is InputEventMouseMotion and dragging_view:
-		yaw = clampf(yaw - event.relative.x * 0.003, -0.85, 0.85)
-		pitch = clampf(pitch - event.relative.y * 0.003, -0.54, 0.38)
-		_update_view()
+		match event.button_index:
+			MOUSE_BUTTON_RIGHT:
+				dragging_view = event.pressed
+			MOUSE_BUTTON_LEFT:
+				if event.pressed:
+					_interact_at_pointer()
+				else:
+					dragging_control = false
+			MOUSE_BUTTON_WHEEL_UP:
+				if event.pressed:
+					station_control_adjusted.emit(active_control, 1.0)
+					get_viewport().set_input_as_handled()
+			MOUSE_BUTTON_WHEEL_DOWN:
+				if event.pressed:
+					station_control_adjusted.emit(active_control, -1.0)
+					get_viewport().set_input_as_handled()
+	elif event is InputEventMouseMotion:
+		if dragging_view:
+			yaw = clampf(yaw - event.relative.x * 0.003, -0.85, 0.85)
+			pitch = clampf(pitch - event.relative.y * 0.003, -0.54, 0.38)
+			_update_view()
+			get_viewport().set_input_as_handled()
+		elif dragging_control:
+			station_control_adjusted.emit(active_control, event.relative.x * 0.38)
+			get_viewport().set_input_as_handled()
 
 func _update_view() -> void:
 	rotation.y = yaw
@@ -42,9 +69,23 @@ func _interact_at_pointer() -> void:
 	var end := origin + camera.project_ray_normal(pointer) * 8.0
 	var query := PhysicsRayQueryParameters3D.create(origin, end)
 	query.collide_with_areas = true
+	query.collide_with_bodies = false
 	var result := get_world_3d().direct_space_state.intersect_ray(query)
 	if result.is_empty():
 		return
 	var hit: Object = result["collider"]
-	if hit.has_meta("station_action"):
-		station_object_selected.emit(str(hit.get_meta("station_action")))
+	if not hit.has_meta("station_action"):
+		return
+	var action := str(hit.get_meta("station_action"))
+	if action == "frequency" or action == "cleanup":
+		active_control = action
+		dragging_control = true
+	else:
+		dragging_control = false
+	animate_station_action(action)
+	station_object_selected.emit(action)
+	get_viewport().set_input_as_handled()
+
+func animate_station_action(action: String) -> void:
+	if arm != null:
+		arm.animate_action(action)

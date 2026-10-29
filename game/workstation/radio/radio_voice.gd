@@ -5,6 +5,7 @@ extends Node
 ## the same line is always printed by the director on the terminal.
 var player: AudioStreamPlayer
 var pending: Array[Dictionary] = []
+var live_quality: float = 1.0
 
 func _ready() -> void:
 	player = AudioStreamPlayer.new()
@@ -14,6 +15,11 @@ func _ready() -> void:
 func stop_all() -> void:
 	pending.clear()
 	player.stop()
+
+func set_signal_quality(quality: float) -> void:
+	live_quality = clampf(quality, 0.0, 1.0)
+	if player != null and player.playing:
+		player.volume_db = lerpf(-7.0, -1.0, live_quality)
 
 func enqueue(line_id: String, signal_quality: float) -> void:
 	var clip := "res://content/voices/generated/%s.ogg" % line_id
@@ -33,5 +39,6 @@ func _next() -> void:
 		return
 	player.stream = stream
 	# Keep critical words audible. Missing voice files are shown as transcripts.
-	player.volume_db = lerpf(-7.0, -1.0, clampf(float(record["quality"]), 0.0, 1.0))
+	set_signal_quality(float(record["quality"]))
+	player.volume_db = lerpf(-7.0, -1.0, live_quality)
 	player.play()
