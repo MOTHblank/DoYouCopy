@@ -35,11 +35,15 @@ func setup(state_node: ScenarioState, radio_node: RadioConsole) -> void:
 	radio.signal_acquired.connect(_on_signal_acquired)
 	radio.signal_lost.connect(_on_signal_lost)
 
-func begin_run() -> void:
-	run_state.reset_run()
+func begin_run(resume_index: int = -1) -> void:
 	contact = null
 	auth_requested = false
-	index = -1
+	if resume_index < 0 or resume_index > CONTACTS.size():
+		run_state.reset_run()
+		index = -1
+	else:
+		index = resume_index - 1
+		run_state.append_log("[STATION] Previous shift checkpoint restored.")
 	_set_phase("WAITING")
 	advance()
 
@@ -194,6 +198,8 @@ func _resolve_contact(consequence: String) -> void:
 	_set_phase("RESOLVING")
 	consequence_emitted.emit(consequence)
 	run_state.append_log("[STATION] " + consequence)
+	if not run_state.save_checkpoint(index + 1):
+		push_warning("Campaign checkpoint could not be saved after %s." % String(contact.id))
 
 func _emit_message(speaker: String, message: String, line_id: String) -> void:
 	run_state.append_log("[%s] %s" % [speaker, message])
@@ -227,4 +233,5 @@ func _finish_campaign() -> void:
 		run_state.ghost_knowledge.size(), run_state.exposure_count, run_state.decisions.size()
 	]
 	run_state.append_log("[ENDING] " + family)
+	run_state.clear_checkpoint()
 	run_finished.emit(report)

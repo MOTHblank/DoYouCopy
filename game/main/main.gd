@@ -63,7 +63,8 @@ func _ready() -> void:
 		radio_voice.stop_all()
 		radio_static.set_signal_quality(1.0)
 	)
-	director.begin_run()
+	var resume_index := run_state.load_checkpoint()
+	director.begin_run(resume_index)
 
 func _sync_screens() -> void:
 	if director.contact != null:

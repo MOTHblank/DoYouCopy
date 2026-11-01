@@ -19,6 +19,11 @@ const CHANNEL_OWNERS := {
 	"B-PRIMARY": "ECHO-2"
 }
 
+const SAVE_VERSION := 1
+const SAVE_PATH := "user://campaign_save.json"
+const SAVE_TEMP_PATH := "user://campaign_save.tmp"
+const SAVE_BACKUP_PATH := "user://campaign_save.bak"
+
 func reset_run() -> void:
 	agent_locations = {"ECHO-ACTUAL": "Relay", "ECHO-2": "Pump Station B"}
 	agent_status = {"ECHO-ACTUAL": "AVAILABLE", "ECHO-2": "AVAILABLE"}
@@ -31,6 +36,122 @@ func reset_run() -> void:
 	communication_log.clear()
 	exposure_count = 0
 	quarantine_count = 0
+
+func save_checkpoint(next_contact_index: int) -> bool:
+	if next_contact_index < 0:
+		push_warning("Refusing to save invalid campaign checkpoint index.")
+		return false
+	var payload := {
+		"version": SAVE_VERSION,
+		"next_contact_index": next_contact_index,
+		"state": snapshot()
+	}
+	var file := FileAccess.open(SAVE_TEMP_PATH, FileAccess.WRITE)
+	if file == null:
+		push_warning("Could not open campaign checkpoint for writing: %s" % FileAccess.get_open_error())
+		return false
+	file.store_string(JSON.stringify(payload, "\t"))
+	file.flush()
+	file = null
+
+	var save_absolute := ProjectSettings.globalize_path(SAVE_PATH)
+	var temp_absolute := ProjectSettings.globalize_path(SAVE_TEMP_PATH)
+	var backup_absolute := ProjectSettings.globalize_path(SAVE_BACKUP_PATH)
+	var had_active := FileAccess.file_exists(SAVE_PATH)
+	if had_active:
+		if FileAccess.file_exists(SAVE_BACKUP_PATH):
+			DirAccess.remove_absolute(backup_absolute)
+		var backup_error := DirAccess.rename_absolute(save_absolute, backup_absolute)
+		if backup_error != OK:
+			DirAccess.remove_absolute(temp_absolute)
+			push_warning("Could not preserve previous campaign checkpoint: %s" % backup_error)
+			return false
+
+	var promote_error := DirAccess.rename_absolute(temp_absolute, save_absolute)
+	if promote_error != OK:
+		if had_active and FileAccess.file_exists(SAVE_BACKUP_PATH):
+			DirAccess.rename_absolute(backup_absolute, save_absolute)
+		push_warning("Could not publish campaign checkpoint: %s" % promote_error)
+		return false
+	return true
+
+func load_checkpoint() -> int:
+	for path in [SAVE_PATH, SAVE_BACKUP_PATH]:
+		var payload := _load_checkpoint_file(path)
+		if payload.is_empty():
+			continue
+		if int(payload.get("version", -1)) != SAVE_VERSION:
+			continue
+		var next_contact_index := int(payload.get("next_contact_index", -1))
+		var state_variant: Variant = payload.get("state", {})
+		if next_contact_index < 0 or not (state_variant is Dictionary):
+			continue
+		var state_data: Dictionary = state_variant
+		if restore_snapshot(state_data):
+			return next_contact_index
+	return -1
+
+func clear_checkpoint() -> void:
+	for path in [SAVE_PATH, SAVE_TEMP_PATH, SAVE_BACKUP_PATH]:
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+func restore_snapshot(data: Dictionary) -> bool:
+	var raw_locations: Variant = data.get("locations", {})
+	var raw_status: Variant = data.get("status", {})
+	var raw_trust: Variant = data.get("trust", {})
+	if not (raw_locations is Dictionary) or not (raw_status is Dictionary) or not (raw_trust is Dictionary):
+		return false
+
+	reset_run()
+	for callsign in agent_locations.keys():
+		if raw_locations.has(callsign):
+			agent_locations[callsign] = str(raw_locations[callsign])
+		if raw_status.has(callsign):
+			agent_status[callsign] = str(raw_status[callsign])
+		if raw_trust.has(callsign):
+			trust[callsign] = int(raw_trust[callsign])
+
+	var raw_channels: Variant = data.get("channels", {})
+	if raw_channels is Dictionary:
+		quarantined_channels = raw_channels.duplicate(true)
+	var raw_knowledge: Variant = data.get("ghost_knowledge", {})
+	if raw_knowledge is Dictionary:
+		ghost_knowledge = raw_knowledge.duplicate(true)
+	var raw_flags: Variant = data.get("flags", {})
+	if raw_flags is Dictionary:
+		flags = raw_flags.duplicate(true)
+	var raw_decisions: Variant = data.get("decisions", {})
+	if raw_decisions is Dictionary:
+		decisions = raw_decisions.duplicate(true)
+
+	knowledge_history.clear()
+	var raw_history: Variant = data.get("knowledge_history", [])
+	if raw_history is Array:
+		for entry in raw_history:
+			knowledge_history.append(str(entry))
+
+	communication_log.clear()
+	var raw_log: Variant = data.get("communication_log", [])
+	if raw_log is Array:
+		var first := maxi(0, raw_log.size() - 45)
+		for entry_index in range(first, raw_log.size()):
+			communication_log.append(str(raw_log[entry_index]))
+
+	exposure_count = maxi(0, int(data.get("exposure", 0)))
+	quarantine_count = clampi(int(data.get("quarantines", quarantined_channels.size())), 0, 2)
+	return true
+
+func _load_checkpoint_file(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		return {}
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return {}
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	if not (parsed is Dictionary):
+		return {}
+	return parsed
 
 func has_flag(flag: String) -> bool:
 	return flags.has(flag)
@@ -121,8 +242,10 @@ func snapshot() -> Dictionary:
 		"trust": trust.duplicate(true),
 		"channels": quarantined_channels.duplicate(true),
 		"ghost_knowledge": ghost_knowledge.duplicate(true),
+		"knowledge_history": knowledge_history.duplicate(),
 		"flags": flags.duplicate(true),
 		"decisions": decisions.duplicate(true),
+		"communication_log": communication_log.duplicate(),
 		"exposure": exposure_count,
 		"quarantines": quarantine_count
 	}
