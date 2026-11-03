@@ -77,7 +77,7 @@ func _interact_at_pointer() -> void:
 	if not hit.has_meta("station_action"):
 		return
 	var action := str(hit.get_meta("station_action"))
-	if action == "frequency" or action == "cleanup":
+	if action in ["frequency", "cleanup", "squelch", "bandwidth"]:
 		active_control = action
 		dragging_control = true
 	else:

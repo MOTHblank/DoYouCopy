@@ -13,6 +13,8 @@ var radio: RadioConsole
 var run_state: ScenarioState
 var frequency_input: SpinBox
 var cleanup_input: HSlider
+var squelch_input: HSlider
+var bandwidth_input: HSlider
 var meter: ProgressBar
 var status_label: Label
 var phase_label: Label
@@ -53,6 +55,8 @@ func bind(director_node: ScenarioDirector, radio_node: RadioConsole, state_node:
 	radio.quality_changed.connect(_quality_changed)
 	frequency_input.value = radio.frequency
 	cleanup_input.value = radio.cleanup
+	squelch_input.value = radio.squelch
+	bandwidth_input.value = radio.bandwidth
 	_refresh()
 
 func _panel(root: Control, left: float, top: float, right: float, bottom: float, anchor_left_value: float, anchor_right_value: float, anchor_top_value: float, anchor_bottom_value: float) -> VBoxContainer:
@@ -119,6 +123,7 @@ func _build_ui() -> void:
 	_text(header, "RMB: LOOK  |  LMB: OPERATE  |  WHEEL: KNOB  |  SPACE: TRANSMIT", 12, "#a1b9b3", false)
 
 	var left := _panel(canvas, 14, 72, 356, -14, 0, 0, 0, 1)
+	left.add_theme_constant_override("separation", 6)
 	_text(left, "RECEIVER  /  01", 22, "#e7cf9b")
 	contact_label = _text(left, "No contact", 16)
 	_text(left, "FREQUENCY / MHz", 14, "#9cc1b4")
@@ -140,11 +145,37 @@ func _build_ui() -> void:
 	cleanup_input.max_value = 1.0
 	cleanup_input.step = 0.01
 	cleanup_input.value = 0.40
-	cleanup_input.custom_minimum_size.y = 36
+	cleanup_input.custom_minimum_size.y = 27
 	left.add_child(cleanup_input)
 	cleanup_input.value_changed.connect(func(value: float) -> void:
 		if radio != null:
 			radio.set_cleanup(value)
+	)
+	_text(left, "SQUELCH / STATIC GATE", 13, "#9cc1b4")
+	squelch_input = HSlider.new()
+	squelch_input.min_value = 0.0
+	squelch_input.max_value = 1.0
+	squelch_input.step = 0.01
+	squelch_input.value = 0.22
+	squelch_input.custom_minimum_size.y = 24
+	squelch_input.tooltip_text = "Suppress static; excessive squelch mutes weak carriers."
+	left.add_child(squelch_input)
+	squelch_input.value_changed.connect(func(value: float) -> void:
+		if radio != null:
+			radio.set_squelch(value)
+	)
+	_text(left, "BANDWIDTH / FILTER WIDTH", 13, "#9cc1b4")
+	bandwidth_input = HSlider.new()
+	bandwidth_input.min_value = 0.0
+	bandwidth_input.max_value = 1.0
+	bandwidth_input.step = 0.01
+	bandwidth_input.value = 0.55
+	bandwidth_input.custom_minimum_size.y = 24
+	bandwidth_input.tooltip_text = "Narrow rejects interference; wide retains voice detail."
+	left.add_child(bandwidth_input)
+	bandwidth_input.value_changed.connect(func(value: float) -> void:
+		if radio != null:
+			radio.set_bandwidth(value)
 	)
 	meter = ProgressBar.new()
 	meter.min_value = 0.0
@@ -330,11 +361,18 @@ func _transmit_action() -> void:
 func adjust_station(control: String, amount: float) -> void:
 	if radio == null:
 		return
-	if control == "cleanup":
-		radio.set_cleanup(radio.cleanup + amount * 0.015)
-		cleanup_input.set_value_no_signal(radio.cleanup)
-	else:
-		radio.adjust_frequency(amount)
+	match control:
+		"cleanup":
+			radio.set_cleanup(radio.cleanup + amount * 0.015)
+			cleanup_input.set_value_no_signal(radio.cleanup)
+		"squelch":
+			radio.set_squelch(radio.squelch + amount * 0.015)
+			squelch_input.set_value_no_signal(radio.squelch)
+		"bandwidth":
+			radio.set_bandwidth(radio.bandwidth + amount * 0.015)
+			bandwidth_input.set_value_no_signal(radio.bandwidth)
+		_:
+			radio.adjust_frequency(amount)
 
 func _request_quarantine_confirmation() -> void:
 	if director == null or director.phase != "VERIFYING" or active_contact == null:
@@ -364,6 +402,10 @@ func show_station_object(action: String) -> void:
 			frequency_input.grab_focus()
 		"cleanup":
 			cleanup_input.grab_focus()
+		"squelch":
+			squelch_input.grab_focus()
+		"bandwidth":
+			bandwidth_input.grab_focus()
 		"repeat":
 			if director != null:
 				director.request_repeat()

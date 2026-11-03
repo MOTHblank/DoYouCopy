@@ -6,6 +6,8 @@ extends Resource
 @export var frequency: float = 101.30
 @export var tolerance: float = 0.42
 @export_range(0.0, 1.0) var cleanup_target: float = 0.76
+@export_range(0.0, 1.0) var bandwidth_target: float = 0.55
+@export_range(0.0, 1.0) var interference_level: float = 0.25
 @export var channel: StringName = &""
 @export var claimed_callsign: StringName = &""
 @export var actual_source: StringName = &""
