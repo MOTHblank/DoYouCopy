@@ -79,5 +79,41 @@ func signal_label() -> String:
 	if quality < 0.45:
 		return "WEAK / FRAGMENTED"
 	if quality < 0.72:
-		return "CARRIER / CLEAN SIGNAL"
-	return "VOICE LOCK / RECEIVE"
+		return "CARRIER / ADJUST FILTERS"
+	if transcript_tier() < 3:
+		return "VOICE LOCK / PARTIAL COPY"
+	return "VOICE LOCK / CLEAR COPY"
+
+## Higher clarity exposes a superset of earlier words. No randomness and no
+## identity-aware logic: legitimate and copied voices use the same decoder.
+func transcript_tier() -> int:
+	if blocked or squelch_muted or quality < 0.55:
+		return 0
+	if quality < 0.74:
+		return 1
+	if quality < 0.82:
+		return 2
+	return 3
+
+func render_transcript(authored: String, line_id: String) -> String:
+	var tier := transcript_tier()
+	if tier == 3:
+		return authored
+	if tier == 0:
+		return "[Speech unintelligible. Adjust the receiver and request a repeat.]"
+	var seed := 0
+	for n in range(line_id.length()):
+		seed = (seed * 31 + line_id.unicode_at(n)) % 10007
+	var threshold := 37 if tier == 2 else 67
+	var words := authored.split(" ", false)
+	var copy := PackedStringArray()
+	var missing := false
+	for n in range(words.size()):
+		var audible := n < 2 or posmod(seed + n * 71 + n * n * 19, 101) >= threshold
+		if audible:
+			copy.append(words[n])
+			missing = false
+		elif not missing:
+			copy.append("[unreadable]")
+			missing = true
+	return " ".join(copy)

@@ -22,6 +22,8 @@ var contact_label: Label
 var objective_label: Label
 var latest_label: Label
 var transcript: RichTextLabel
+var full_subtitles: CheckBox
+var transcript_entries: Array[Dictionary] = []
 var evidence_text: RichTextLabel
 var tabs: OptionButton
 var action_buttons: Dictionary = {}
@@ -49,6 +51,7 @@ func bind(director_node: ScenarioDirector, radio_node: RadioConsole, state_node:
 	director.contact_started.connect(_contact_started)
 	director.phase_changed.connect(_phase_changed)
 	director.message_emitted.connect(_message_emitted)
+	director.transcript_refined.connect(_transcript_refined)
 	director.consequence_emitted.connect(_consequence_emitted)
 	director.run_finished.connect(_run_finished)
 	radio.tuning_changed.connect(_frequency_changed)
@@ -227,6 +230,14 @@ func _build_ui() -> void:
 	tabs.add_item("COMMS LOG")
 	right.add_child(tabs)
 	tabs.item_selected.connect(func(_index: int) -> void: _update_evidence())
+	full_subtitles = CheckBox.new()
+	full_subtitles.text = "FULL VOICE SUBTITLES / ACCESSIBILITY"
+	full_subtitles.tooltip_text = "Show complete authored speech even when reception is weak."
+	right.add_child(full_subtitles)
+	full_subtitles.toggled.connect(func(_enabled: bool) -> void:
+		_rebuild_transcript()
+		_update_evidence()
+	)
 	evidence_text = RichTextLabel.new()
 	evidence_text.fit_content = false
 	evidence_text.scroll_active = true
@@ -250,6 +261,7 @@ func _contact_started(contact: ContactDefinition, number: int, total: int) -> vo
 	complete = false
 	report_text = ""
 	if number == 1:
+		transcript_entries.clear()
 		transcript.clear()
 		latest_label.text = "No intelligible transmission."
 		tabs.select(0)
@@ -269,18 +281,52 @@ func _phase_changed(_new_phase: String) -> void:
 
 func _message_emitted(speaker: String, message: String, line_id: String) -> void:
 	contact_label.text = "CONTACT %02d / %02d    CLAIM %s" % [director.index + 1, total_contacts, speaker]
-	last_message = "%s: %s" % [speaker, message]
+	var full := director.full_transcript_for(line_id)
+	transcript_entries.append({"speaker": speaker, "line_id": line_id, "received": message, "full": full if not full.is_empty() else message})
+	if transcript_entries.size() > 80:
+		transcript_entries.pop_front()
+	last_message = "%s: %s" % [speaker, full if full_subtitles.button_pressed else message]
 	objective_label.text = active_contact.objective if active_contact != null else "Confirm the caller."
-	transcript.append_text("[%s] %s\n" % [line_id, last_message])
 	latest_label.text = last_message
+	_rebuild_transcript()
 	_refresh()
 	_update_evidence()
+
+func _transcript_refined(speaker: String, message: String, line_id: String) -> void:
+	for n in range(transcript_entries.size() - 1, -1, -1):
+		var entry: Dictionary = transcript_entries[n]
+		if String(entry["line_id"]) != line_id:
+			continue
+		entry["received"] = message
+		if n == transcript_entries.size() - 1:
+			last_message = "%s: %s" % [speaker, String(entry["full"]) if full_subtitles.button_pressed else message]
+			latest_label.text = last_message
+		break
+	_rebuild_transcript()
+	_update_evidence()
+
+func _rebuild_transcript() -> void:
+	if transcript == null:
+		return
+	transcript.clear()
+	for entry in transcript_entries:
+		var caption := String(entry["full"]) if full_subtitles != null and full_subtitles.button_pressed else String(entry["received"])
+		var speaker := String(entry["speaker"])
+		if speaker.is_empty():
+			transcript.append_text("[%s] %s\n" % [String(entry["line_id"]), caption])
+		else:
+			transcript.append_text("[%s] %s: %s\n" % [String(entry["line_id"]), speaker, caption])
+	if not transcript_entries.is_empty() and full_subtitles != null and full_subtitles.button_pressed:
+		var last: Dictionary = transcript_entries[-1]
+		if not String(last["speaker"]).is_empty():
+			latest_label.text = "%s: %s" % [String(last["speaker"]), String(last["full"]) ]
 
 func _consequence_emitted(message: String) -> void:
 	result_message = message
 	last_message = "FIELD RESULT: " + message
 	latest_label.text = last_message
-	transcript.append_text("[RESULT] %s\n" % message)
+	transcript_entries.append({"speaker": "", "line_id": "RESULT", "received": message, "full": message})
+	_rebuild_transcript()
 	_refresh()
 	_update_evidence()
 
@@ -289,7 +335,8 @@ func _run_finished(report: String) -> void:
 	report_text = report
 	last_message = report
 	latest_label.text = "SHIFT COMPLETE — ENDING REPORT AT RIGHT"
-	transcript.append_text("[SHIFT REPORT]\n%s\n" % report)
+	transcript_entries.append({"speaker": "", "line_id": "SHIFT REPORT", "received": report, "full": report})
+	_rebuild_transcript()
 	tabs.select(0)
 	_refresh()
 	_update_evidence()
@@ -447,7 +494,13 @@ func _update_evidence() -> void:
 			evidence_text.text = "FIELD / VERIFIED POSITIONS\n----------------------------\nRELAY -- JUNCTION\n    |        |\nPUMP STATION B -- EAST SERVICE\n\nECHO-ACTUAL: %s\nECHO-2: %s\n\nA reported location is not a verified movement. The map updates from your accepted instructions." % [
 				run_state.agent_locations["ECHO-ACTUAL"], run_state.agent_locations["ECHO-2"]]
 		3:
-			evidence_text.text = "\n".join(run_state.communication_log)
+			var log_copy := "\n".join(run_state.communication_log)
+			if full_subtitles != null and full_subtitles.button_pressed:
+				log_copy += "\n\nFULL VOICE SUBTITLES / ACCESSIBILITY\n"
+				for entry in transcript_entries:
+					if not String(entry["speaker"]).is_empty():
+						log_copy += "\n[%s] %s: %s" % [String(entry["line_id"]), String(entry["speaker"]), String(entry["full"])]
+			evidence_text.text = log_copy
 
 func _unhandled_input(event: InputEvent) -> void:
 	if director == null or not (event is InputEventKey):

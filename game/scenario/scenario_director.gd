@@ -4,6 +4,7 @@ extends Node
 signal contact_started(contact: ContactDefinition, number: int, total: int)
 signal phase_changed(phase: String)
 signal message_emitted(speaker: String, message: String, line_id: String)
+signal transcript_refined(speaker: String, message: String, line_id: String)
 signal consequence_emitted(message: String)
 signal run_finished(report: String)
 signal opening_transcript_complete
@@ -25,6 +26,8 @@ var phase: String = "WAITING"
 var index: int = -1
 var contact: ContactDefinition
 var auth_requested: bool = false
+## The original authored lines remain separate from the receiver's partial copy.
+var reception_lines: Array[Dictionary] = []
 ## False for test harnesses and transcript-only integration.
 ## Main enables it and signals when every available voiced line is finished.
 var opening_audio_gate := false
@@ -34,10 +37,12 @@ func setup(state_node: ScenarioState, radio_node: RadioConsole) -> void:
 	radio = radio_node
 	radio.signal_acquired.connect(_on_signal_acquired)
 	radio.signal_lost.connect(_on_signal_lost)
+	radio.quality_changed.connect(_on_quality_changed)
 
 func begin_run(resume_index: int = -1) -> void:
 	contact = null
 	auth_requested = false
+	reception_lines.clear()
 	if resume_index < 0 or resume_index > CONTACTS.size():
 		run_state.reset_run()
 		index = -1
@@ -67,11 +72,19 @@ func advance() -> void:
 		return
 	contact = CONTACTS[index] as ContactDefinition
 	auth_requested = false
+	reception_lines.clear()
 	# Set phase *before* radio configuration. An already-aligned dial can lock
 	# in the same stack frame, and that acquisition must not be discarded.
 	_set_phase("TUNING")
 	contact_started.emit(contact, index + 1, CONTACTS.size())
-	run_state.append_log("[STATION] Incoming carrier near %.2f MHz." % contact.frequency)
+	if index == 0:
+		# First contact deliberately teaches the dial with an exact allocation.
+		run_state.append_log("[STATION] Training allocation: %.2f MHz. Tune and find the voice." % contact.frequency)
+	else:
+		# Operations supplies only a half-MHz allocation. The spectrum and
+		# receiver quality supply the exact acquisition point.
+		var band_start := float(floori(contact.frequency * 2.0)) * 0.5
+		run_state.append_log("[STATION] Carrier reported in %.2f-%.2f MHz allocation. Sweep for the peak." % [band_start, band_start + 0.5])
 	if contact.terminal_anomaly and run_state.knows("station_terminal_sync"):
 		run_state.flags["terminal_unreliable"] = true
 		run_state.append_log("[STATION] Data sync completed. Terminal location index refreshed.")
@@ -95,6 +108,7 @@ func _ghost_prepared(required: PackedStringArray) -> bool:
 func _on_signal_acquired(_frequency: float) -> void:
 	if phase != "TUNING" or contact == null:
 		return
+	reception_lines.clear()
 	_set_phase("RECEIVING")
 	var prepared := contact.actual_source != &"GHOST" or _ghost_prepared(contact.required_ghost_knowledge)
 	var spoken := contact.opening_for(run_state.flags)
@@ -126,6 +140,7 @@ func opening_voice_finished() -> void:
 func _on_signal_lost() -> void:
 	if phase != "VERIFYING" and phase != "RECEIVING":
 		return
+	reception_lines.clear()
 	run_state.append_log("[STATION] Signal lost. Retune before transmitting.")
 	_set_phase("TUNING")
 
@@ -202,8 +217,36 @@ func _resolve_contact(consequence: String) -> void:
 		push_warning("Campaign checkpoint could not be saved after %s." % String(contact.id))
 
 func _emit_message(speaker: String, message: String, line_id: String) -> void:
-	run_state.append_log("[%s] %s" % [speaker, message])
-	message_emitted.emit(speaker, message, line_id)
+	# Store full text for accessibility and predictable recovery. Only the
+	# actually intelligible copy reaches the normal log and subtitle panel.
+	var tier := 3 if index == 0 or radio == null else radio.transcript_tier()
+	var received := message if tier == 3 else radio.render_transcript(message, line_id)
+	reception_lines.append({
+		"speaker": speaker, "authored": message, "line_id": line_id, "tier": tier
+	})
+	run_state.append_log("[%s] %s" % [speaker, received])
+	message_emitted.emit(speaker, received, line_id)
+
+func full_transcript_for(line_id: String) -> String:
+	for record in reception_lines:
+		if String(record["line_id"]) == line_id:
+			return String(record["authored"])
+	return ""
+
+func _on_quality_changed(_value: float) -> void:
+	if radio == null or not radio.acquired or index == 0:
+		return
+	if phase != "RECEIVING" and phase != "VERIFYING":
+		return
+	var tier := radio.transcript_tier()
+	for record in reception_lines:
+		if tier <= int(record["tier"]):
+			continue
+		record["tier"] = tier
+		var line_id := String(record["line_id"])
+		var clearer := radio.render_transcript(String(record["authored"]), line_id)
+		run_state.append_log("[RX RECOVERED / %s] %s" % [line_id, clearer])
+		transcript_refined.emit(String(record["speaker"]), clearer, line_id)
 
 func _set_phase(next_phase: String) -> void:
 	phase = next_phase

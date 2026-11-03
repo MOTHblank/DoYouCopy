@@ -75,3 +75,25 @@ These are **operator-facing references only**. `ScenarioDirector` continues to r
 ## Per-contact reception profiles
 
 Each `ContactDefinition` provides a `bandwidth_target` and an `interference_level`. Frequency locates the carrier, cleanup adjusts waveform processing, bandwidth changes capture width and the tradeoff between noise and voice detail, and squelch suppresses noise but can mute weak signals. The HUD sliders and radio knobs share one `RadioConsole` model. All eight contact resources have authored profiles; none of these controls determine identity or grant knowledge to the GHOST.
+
+
+## Investigative receiver acquisition and intelligibility
+
+The **first training contact** still states its exact 101.30 MHz allocation. Later
+carriers are announced only within a half-MHz allocation; the physical frequency
+control and live spectrum peak determine the correct tuning. A pre-tuned dial can
+still acquire its next carrier immediately.
+
+The normal comms log and received-transmission panel now record what the
+receiver could actually recover at the time of reception. Partial reception
+obscures consistent word groups, while adjusting cleanup, filter width and tuning
+can reveal additional fragments of a received line without changing what the
+caller really said. REPEAT remains available after voice playback completes;
+it retransmits the authored repeat line at the current reception quality.
+Weak reception also causes deterministic, short audio dropouts rather than just
+volume attenuation. GHOST knowledge and authored branches are unaffected by
+the quality of the operator's receiver.
+
+For accessibility, enable **FULL VOICE SUBTITLES / ACCESSIBILITY** on the
+reference desk. It reveals the full authored text of received voice lines
+independently of reception quality; the normal mode remains investigative.
