@@ -8,7 +8,7 @@ The GitHub main branch contains a Godot 4.7 project with eight authored major ra
 - **Left-click**: inspect paper/terminal/map, select a response, operate the microphone, or press the physical REPEAT / AUTH buttons.
 - **Drag the physical radio knobs**: adjust frequency or cleanup. The last selected knob also receives the mouse wheel.
 - **Mouse wheel / Up / Down**: frequency tuning (0.05 MHz steps when focused on the frequency knob).
-- **Frequency box + cleanup slider**: acquire and clean the incoming carrier. Normal acquisition is intentionally short.
+- **Frequency, cleanup, squelch and bandwidth**: tune the carrier, process speech, suppress static and trade filter width against voice detail. The four physical radio knobs also support drag and wheel input; default settings remain forgiving.
 - **R / A**: REPEAT / AUTHENTICATE.
 - **1 / 2 / 3**: select HOLD / PROCEED / REROUTE. Selection is **not** transmission.
 - **Space / Enter / microphone**: send the selected instruction once the incoming message is complete. During RECEIVING, **Space / Enter** skips the preview recording; its full text remains in the communication log. The operator arm reaches for the microphone. The lower-left controls provide the same interaction without pixel-perfect 3D targeting.
@@ -71,3 +71,7 @@ Each document contains the challenge ID, question, answer, revision date, curren
 The original sequence is preserved: C01 shows DELTA-4 current; C02 shows TIDE-2 current and DELTA-4 filed; C03–C07 show BRAVO-6 current with TIDE-2 and DELTA-4 retired; C08 shows NORTH-8 current with BRAVO-6 and TIDE-2 retired. DELTA-4 is no longer visible at C08.
 
 These are **operator-facing references only**. `ScenarioDirector` continues to resolve authentication responses, and `ScenarioState.ghost_knowledge` independently governs which challenge answers the GHOST can reproduce. Showing a sheet does not teach the GHOST a fact. When adding a new challenge, also author the associated `ContactDefinition` challenge and knowledge rules explicitly.
+
+## Per-contact reception profiles
+
+Each `ContactDefinition` provides a `bandwidth_target` and an `interference_level`. Frequency locates the carrier, cleanup adjusts waveform processing, bandwidth changes capture width and the tradeoff between noise and voice detail, and squelch suppresses noise but can mute weak signals. The HUD sliders and radio knobs share one `RadioConsole` model. All eight contact resources have authored profiles; none of these controls determine identity or grant knowledge to the GHOST.
