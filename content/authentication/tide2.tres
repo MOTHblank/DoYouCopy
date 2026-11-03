@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="AuthenticationDocument" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/scenario/authentication_document.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+challenge_id = &"TIDE-2"
+prompt = "What has a bed but never sleeps?"
+answer = "RIVER"
+revision_date = "2026-10-05"
+valid_from_contact = 2
+valid_through_contact = 2
+filed_through_contact = 2
+visible_from_contact = 2
+visible_through_contact = 8

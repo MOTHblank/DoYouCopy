@@ -1,6 +1,9 @@
 class_name WorkstationHUD
 extends CanvasLayer
 
+## Paper content is authorable independently of presentation and GHOST knowledge.
+const AUTH_PAPERWORK: AuthenticationPaperwork = preload("res://content/authentication/paperwork.tres")
+
 signal action_transmitted(action: String)
 signal opening_skip_requested
 
@@ -396,16 +399,7 @@ func _update_evidence() -> void:
 				run_state.agent_locations["ECHO-2"], run_state.agent_status["ECHO-2"],
 				active_contact.objective]
 		1:
-			var reference := ""
-			match String(active_contact.id):
-				"C01":
-					reference = "DELTA-4 / CURRENT\nWhat has keys but opens no locks?\nKEYBOARD"
-				"C02":
-					reference = "TIDE-2 / CURRENT\nWhat has a bed but never sleeps?\nRIVER\n\nDELTA-4 / FILED\nKEYBOARD"
-				"C08":
-					reference = "NORTH-8 / CURRENT\nWhat holds a road but never walks?\nBRIDGE\n\nBRAVO-6 / RETIRED\nSHADOW\n\nTIDE-2 / RETIRED\nRIVER"
-				_:
-					reference = "BRAVO-6 / CURRENT\nWhat follows you in the light?\nSHADOW\n\nTIDE-2 / RETIRED\nRIVER\n\nDELTA-4 / RETIRED\nKEYBOARD"
+			var reference := AUTH_PAPERWORK.reference_for(director.index + 1, run_state.flags)
 			evidence_text.text = "PAPER / AUTH CHALLENGES\n----------------------------\n%s\n\nACTIVE CHALLENGE: %s\n\nA matching answer confirms only knowledge, not identity." % [reference, String(active_contact.challenge_id)]
 		2:
 			evidence_text.text = "FIELD / VERIFIED POSITIONS\n----------------------------\nRELAY -- JUNCTION\n    |        |\nPUMP STATION B -- EAST SERVICE\n\nECHO-ACTUAL: %s\nECHO-2: %s\n\nA reported location is not a verified movement. The map updates from your accepted instructions." % [

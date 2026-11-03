@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="AuthenticationDocument" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/scenario/authentication_document.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+challenge_id = &"DELTA-4"
+prompt = "What has keys but opens no locks?"
+answer = "KEYBOARD"
+revision_date = "2026-10-04"
+valid_from_contact = 1
+valid_through_contact = 1
+filed_through_contact = 2
+visible_from_contact = 1
+visible_through_contact = 7

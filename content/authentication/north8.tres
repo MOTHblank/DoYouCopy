@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="AuthenticationDocument" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/scenario/authentication_document.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+challenge_id = &"NORTH-8"
+prompt = "What holds a road but never walks?"
+answer = "BRIDGE"
+revision_date = "2026-10-07"
+valid_from_contact = 8
+valid_through_contact = 8
+filed_through_contact = 8
+visible_from_contact = 8
+visible_through_contact = 8

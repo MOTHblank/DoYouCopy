@@ -61,3 +61,13 @@ python tools/validate_content.py
 ```
 
 The existing headless Godot scenario harness exercises the scenario flow and endings, but must still be run in a Godot installation. This repository was edited remotely without a Godot executable in the authoring environment, so an actual runtime/editor check has **not** been performed.
+
+## Authentication paperwork authoring
+
+The `AUTH PAPER` tab reads `content/authentication/paperwork.tres` rather than contact-specific HUD conditions. The manifest lists `AuthenticationDocument` resources in newest-first order. To add a protocol revision, create a new document in `content/authentication/` and register it in the manifest.
+
+Each document contains the challenge ID, question, answer, revision date, current validity window, optional FILED window, visible contact window, and optional required/excluded scenario flags. Windows use **one-based contact numbers**, including contacts that could be skipped; they are not counts of successful transmissions. After its current window, a visible document becomes FILED (if configured), then RETIRED. Obsolete entries retain the answer but omit the current challenge prompt, matching the existing paperwork presentation.
+
+The original sequence is preserved: C01 shows DELTA-4 current; C02 shows TIDE-2 current and DELTA-4 filed; C03–C07 show BRAVO-6 current with TIDE-2 and DELTA-4 retired; C08 shows NORTH-8 current with BRAVO-6 and TIDE-2 retired. DELTA-4 is no longer visible at C08.
+
+These are **operator-facing references only**. `ScenarioDirector` continues to resolve authentication responses, and `ScenarioState.ghost_knowledge` independently governs which challenge answers the GHOST can reproduce. Showing a sheet does not teach the GHOST a fact. When adding a new challenge, also author the associated `ContactDefinition` challenge and knowledge rules explicitly.
