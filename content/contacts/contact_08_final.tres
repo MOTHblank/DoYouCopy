@@ -6,6 +6,8 @@
 script = ExtResource("1")
 id = &"C08"
 frequency = 101.3
+bandwidth_target = 0.80
+interference_level = 0.35
 cleanup_target = 0.28
 channel = &"A-PRIMARY"
 claimed_callsign = &"ECHO-ACTUAL"
