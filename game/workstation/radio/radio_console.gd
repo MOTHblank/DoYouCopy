@@ -59,7 +59,7 @@ func _recalculate() -> void:
 	var carrier_strength := tune * cleaned * detail
 	var noise := interference_level * bandwidth * (1.0 - 0.75 * squelch)
 	# Tight squelch suppresses static but can entirely mute weak signals.
-	squelch_muted = not blocked and carrier_strength < (0.10 + squelch * 0.70)
+	squelch_muted = not blocked and tune >= 0.40 and carrier_strength < (0.10 + squelch * 0.70)
 	quality = 0.0 if blocked or squelch_muted else carrier_strength * (1.0 - 0.32 * noise)
 	quality_changed.emit(quality)
 	if quality < 0.35 and acquired:
