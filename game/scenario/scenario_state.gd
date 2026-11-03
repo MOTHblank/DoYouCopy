@@ -130,6 +130,16 @@ func save_checkpoint(next_contact_index: int) -> bool:
 	var generation := 1
 	var previous_candidates := _checkpoint_candidates()
 	if not previous_candidates.is_empty():
+		# A crash can leave the only newest valid checkpoint in the temporary
+		# slot. Copy it to active and validate before reusing that slot.
+		if String(previous_candidates[0]["path"]) == SAVE_TEMP_PATH:
+			var rescue_error := DirAccess.copy_absolute(
+				ProjectSettings.globalize_path(SAVE_TEMP_PATH),
+				ProjectSettings.globalize_path(SAVE_PATH)
+			)
+			if rescue_error != OK or _load_checkpoint_file(SAVE_PATH).is_empty():
+				push_warning("Could not preserve the recovered temporary checkpoint.")
+				return false
 		generation = int(previous_candidates[0]["generation"]) + 1
 	var payload := {
 		"version": SAVE_VERSION,
