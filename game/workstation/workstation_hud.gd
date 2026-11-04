@@ -6,6 +6,8 @@ const AUTH_PAPERWORK: AuthenticationPaperwork = preload("res://content/authentic
 
 signal action_transmitted(action: String)
 signal opening_skip_requested
+signal annotations_changed
+signal terminal_scroll_requested(pixels: int)
 
 ## Readable operator UI complements the in-world screens; it never judges identity.
 var director: ScenarioDirector
@@ -26,6 +28,13 @@ var full_subtitles: CheckBox
 var transcript_entries: Array[Dictionary] = []
 var evidence_text: RichTextLabel
 var tabs: OptionButton
+var terminal_controls: HBoxContainer
+var annotation_controls: VBoxContainer
+var annotation_station: OptionButton
+var annotation_kind: OptionButton
+var annotation_note: LineEdit
+var annotation_delete_picker: OptionButton
+var timeline_filter: OptionButton
 var action_buttons: Dictionary = {}
 var repeat_button: Button
 var auth_button: Button
@@ -60,6 +69,7 @@ func bind(director_node: ScenarioDirector, radio_node: RadioConsole, state_node:
 	cleanup_input.value = radio.cleanup
 	squelch_input.value = radio.squelch
 	bandwidth_input.value = radio.bandwidth
+	_refresh_annotation_options()
 	_refresh()
 
 func _panel(root: Control, left: float, top: float, right: float, bottom: float, anchor_left_value: float, anchor_right_value: float, anchor_top_value: float, anchor_bottom_value: float) -> VBoxContainer:
@@ -228,8 +238,50 @@ func _build_ui() -> void:
 	tabs.add_item("AUTH PAPER")
 	tabs.add_item("FIELD MAP")
 	tabs.add_item("COMMS LOG")
+	tabs.add_item("RECONSTRUCTION")
 	right.add_child(tabs)
 	tabs.item_selected.connect(func(_index: int) -> void: _update_evidence())
+
+	terminal_controls = HBoxContainer.new()
+	right.add_child(terminal_controls)
+	_button(terminal_controls, "MONITOR PAGE UP", func() -> void: terminal_scroll_requested.emit(-180))
+	_button(terminal_controls, "MONITOR PAGE DOWN", func() -> void: terminal_scroll_requested.emit(180))
+
+	annotation_controls = VBoxContainer.new()
+	annotation_controls.add_theme_constant_override("separation", 4)
+	right.add_child(annotation_controls)
+	_text(annotation_controls, "OPERATOR MAP NOTES / NEVER VERIFIED", 13, "#e7cf9b")
+	var annotation_row := HBoxContainer.new()
+	annotation_controls.add_child(annotation_row)
+	annotation_station = OptionButton.new()
+	annotation_station.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for station in ScenarioState.MAP_STATIONS:
+		annotation_station.add_item(station)
+	annotation_row.add_child(annotation_station)
+	annotation_kind = OptionButton.new()
+	annotation_kind.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for kind in ScenarioState.ANNOTATION_KINDS:
+		annotation_kind.add_item(kind)
+	annotation_row.add_child(annotation_kind)
+	annotation_note = LineEdit.new()
+	annotation_note.placeholder_text = "Your hypothesis (140 characters maximum)"
+	annotation_note.max_length = 140
+	annotation_controls.add_child(annotation_note)
+	_button(annotation_controls, "ADD UNVERIFIED MAP NOTE", _add_map_note)
+	var remove_row := HBoxContainer.new()
+	annotation_controls.add_child(remove_row)
+	annotation_delete_picker = OptionButton.new()
+	annotation_delete_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	remove_row.add_child(annotation_delete_picker)
+	_button(remove_row, "REMOVE NOTE", _remove_map_note)
+
+	timeline_filter = OptionButton.new()
+	timeline_filter.add_item("ALL EVENTS")
+	timeline_filter.add_item("TRANSMISSIONS")
+	timeline_filter.add_item("OPERATOR ACTIONS")
+	timeline_filter.add_item("FIELD / STATION RECORDS")
+	right.add_child(timeline_filter)
+	timeline_filter.item_selected.connect(func(_index: int) -> void: _update_evidence())
 	full_subtitles = CheckBox.new()
 	full_subtitles.text = "FULL VOICE SUBTITLES / ACCESSIBILITY"
 	full_subtitles.tooltip_text = "Show complete authored speech even when reception is weak."
@@ -471,10 +523,111 @@ func show_station_object(action: String) -> void:
 			_request_quarantine_confirmation()
 	_update_evidence()
 
+func _refresh_annotation_options() -> void:
+	if annotation_delete_picker == null or run_state == null:
+		return
+	var previous_id := annotation_delete_picker.get_selected_id()
+	annotation_delete_picker.clear()
+	for note in run_state.map_annotations:
+		var id := int(note["id"])
+		annotation_delete_picker.add_item("#%d / %s / %s" % [
+			id, str(note["station"]), str(note["kind"])
+		], id)
+	if annotation_delete_picker.item_count > 0:
+		var selected_index := 0
+		for i in range(annotation_delete_picker.item_count):
+			if annotation_delete_picker.get_item_id(i) == previous_id:
+				selected_index = i
+				break
+		annotation_delete_picker.select(selected_index)
+
+func _add_map_note() -> void:
+	if run_state == null or annotation_station.selected < 0 or annotation_kind.selected < 0:
+		return
+	var contact_id := String(active_contact.id) if active_contact != null else ""
+	var station := annotation_station.get_item_text(annotation_station.selected)
+	var kind := annotation_kind.get_item_text(annotation_kind.selected)
+	var id := run_state.add_annotation(station, kind, annotation_note.text, contact_id)
+	if id < 0:
+		return
+	run_state.record_evidence("OPERATOR", contact_id,
+		"Added unverified map theory #%d at %s (%s): %s" % [
+			id, station, kind, annotation_note.text.strip_edges()
+		])
+	annotation_note.clear()
+	_refresh_annotation_options()
+	annotations_changed.emit()
+	_update_evidence()
+
+func _remove_map_note() -> void:
+	if run_state == null or annotation_delete_picker.item_count == 0:
+		return
+	var id := annotation_delete_picker.get_selected_id()
+	if run_state.remove_annotation(id):
+		var contact_id := String(active_contact.id) if active_contact != null else ""
+		run_state.record_evidence("OPERATOR", contact_id, "Removed unverified map theory #%d." % id)
+		_refresh_annotation_options()
+		annotations_changed.emit()
+		_update_evidence()
+
+func _sync_reference_controls() -> void:
+	if terminal_controls == null:
+		return
+	terminal_controls.visible = tabs.selected == 0 and not complete
+	annotation_controls.visible = tabs.selected == 2 and not complete
+	timeline_filter.visible = tabs.selected == 4
+
+func _reconstruction_text() -> String:
+	var lines: Array[String] = [
+		"CHRONOLOGICAL EVIDENCE / OPERATOR SHIFT",
+		"Times are elapsed shift time; sequence is preserved across checkpoints.",
+		"CALLER REPORT = UNVERIFIED. FIELD RECORD = INDEPENDENT MAP.",
+		"No matching callsign or location establishes identity.",
+		"--------------------------------------------------"
+	]
+	var count := 0
+	for event in run_state.evidence_events:
+		var kind := str(event["kind"])
+		match timeline_filter.selected:
+			1:
+				if kind != "TRANSMISSION":
+					continue
+			2:
+				if kind != "DECISION" and kind != "OPERATOR":
+					continue
+			3:
+				if kind != "FIELD" and kind != "STATION":
+					continue
+		var seconds := maxi(0, int(float(event["time"])))
+		lines.append("#%03d  +%02d:%02d  /  %s  /  %s" % [
+			int(event["seq"]), seconds / 60, seconds % 60,
+			str(event["contact"]) if not str(event["contact"]).is_empty() else "SHIFT", kind
+		])
+		var channel := str(event["channel"])
+		var caller := str(event["callsign"])
+		if not channel.is_empty():
+			lines.append("  Carrier: " + channel)
+		if not caller.is_empty():
+			lines.append("  Stated identity: " + caller + " (NOT VERIFIED)")
+		if not str(event["claimed"]).is_empty():
+			lines.append("  Caller-reported place: " + str(event["claimed"]) + " [UNVERIFIED]")
+		if not str(event["verified"]).is_empty():
+			lines.append("  Independent field record at this moment: " + str(event["verified"]))
+		lines.append("  " + str(event["statement"]))
+		lines.append("")
+		count += 1
+	if count == 0:
+		lines.append("Nothing recorded for this filter yet.")
+	return "\n".join(lines)
+
 func _update_evidence() -> void:
 	if evidence_text == null or run_state == null:
 		return
-	if complete:
+	_sync_reference_controls()
+	if tabs.selected == 4:
+		evidence_text.text = _reconstruction_text()
+		return
+	if complete and tabs.selected != 2:
 		evidence_text.text = report_text
 		return
 	if active_contact == null:
@@ -482,17 +635,56 @@ func _update_evidence() -> void:
 		return
 	match tabs.selected:
 		0:
-			evidence_text.text = "ECHO FIELD TERMINAL\n----------------------------\nRX: %.2f MHz\nCALL CLAIM: %s\n\nLAST VERIFIED:\nACTUAL: %s / %s\nECHO-2: %s / %s\n\nCURRENT OBJECTIVE:\n%s\n\nWARNING: a caller claim is not a verified location." % [
-				radio.frequency, String(active_contact.claimed_callsign) if director.phase != "TUNING" else "UNCONFIRMED",
-				run_state.displayed_location("ECHO-ACTUAL"), run_state.agent_status["ECHO-ACTUAL"],
-				run_state.agent_locations["ECHO-2"], run_state.agent_status["ECHO-2"],
-				active_contact.objective]
+			var prior: Array[String] = []
+			for i in range(run_state.evidence_events.size() - 1, -1, -1):
+				var event: Dictionary = run_state.evidence_events[i]
+				if str(event["kind"]) == "TRANSMISSION":
+					prior.append("#%03d / %s\n%s" % [
+						int(event["seq"]), str(event["callsign"]), str(event["statement"])
+					])
+				if prior.size() >= 8:
+					break
+			evidence_text.text = "ECHO / FIELD TERMINAL\n----------------------------\n" + (
+				"RX: %.2f MHz / %s\nCLAIM: %s [UNVERIFIED]\n\n" % [
+					radio.frequency, radio.signal_label(),
+					String(active_contact.claimed_callsign) if director.phase != "TUNING" else "UNKNOWN"
+				]
+				+ "STATION SYNC / NOT INDEPENDENT\nACTUAL: %s\nECHO-2: %s\n\n" % [
+					run_state.displayed_location("ECHO-ACTUAL"),
+					run_state.displayed_location("ECHO-2")
+				]
+				+ "MISSION OBJECTIVE\n%s\n\n" % active_contact.objective
+				+ "PREVIOUS RECEIVED TRANSMISSIONS\n"
+				+ ("\n\n".join(prior) if not prior.is_empty() else "None.")
+			)
 		1:
 			var reference := AUTH_PAPERWORK.reference_for(director.index + 1, run_state.flags)
 			evidence_text.text = "PAPER / AUTH CHALLENGES\n----------------------------\n%s\n\nACTIVE CHALLENGE: %s\n\nA matching answer confirms only knowledge, not identity." % [reference, String(active_contact.challenge_id)]
 		2:
-			evidence_text.text = "FIELD / VERIFIED POSITIONS\n----------------------------\nRELAY -- JUNCTION\n    |        |\nPUMP STATION B -- EAST SERVICE\n\nECHO-ACTUAL: %s\nECHO-2: %s\n\nA reported location is not a verified movement. The map updates from your accepted instructions." % [
-				run_state.agent_locations["ECHO-ACTUAL"], run_state.agent_locations["ECHO-2"]]
+			var lines: Array[String] = [
+				"FIELD MAP / INDEPENDENT RECORD",
+				"----------------------------",
+				"ECHO-ACTUAL: %s / %s" % [
+					run_state.agent_locations.get("ECHO-ACTUAL", "UNKNOWN"),
+					run_state.agent_status.get("ECHO-ACTUAL", "UNKNOWN")
+				],
+				"ECHO-2: %s / %s" % [
+					run_state.agent_locations.get("ECHO-2", "UNKNOWN"),
+					run_state.agent_status.get("ECHO-2", "UNKNOWN")
+				],
+				"",
+				"OPERATOR THEORIES / UNVERIFIED",
+				"These are your hypotheses, never field-map positions."
+			]
+			for note in run_state.map_annotations:
+				lines.append("#%d / %s / %s\n  %s" % [
+					int(note["id"]), str(note["station"]), str(note["kind"]), str(note["note"])
+				])
+			if run_state.map_annotations.is_empty():
+				lines.append("No hypotheses yet.")
+			lines.append("")
+			lines.append("Notes are included in completed-contact checkpoints.")
+			evidence_text.text = "\n".join(lines)
 		3:
 			var log_copy := "\n".join(run_state.communication_log)
 			if full_subtitles != null and full_subtitles.button_pressed:
@@ -537,6 +729,16 @@ func _unhandled_input(event: InputEvent) -> void:
 				director.advance()
 			elif complete:
 				director.begin_run()
+		KEY_PAGEUP:
+			if tabs.selected == 0:
+				terminal_scroll_requested.emit(-180)
+			else:
+				return
+		KEY_PAGEDOWN:
+			if tabs.selected == 0:
+				terminal_scroll_requested.emit(180)
+			else:
+				return
 		KEY_ESCAPE:
 			get_viewport().gui_release_focus()
 		KEY_UP:
