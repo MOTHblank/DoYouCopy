@@ -49,6 +49,7 @@ func begin_run(resume_index: int = -1) -> void:
 	else:
 		index = resume_index - 1
 		run_state.append_log("[STATION] Previous shift checkpoint restored.")
+		run_state.record_evidence("STATION", "", "Previous completed-contact checkpoint restored.")
 	_set_phase("WAITING")
 	advance()
 
@@ -77,6 +78,9 @@ func advance() -> void:
 	# in the same stack frame, and that acquisition must not be discarded.
 	_set_phase("TUNING")
 	contact_started.emit(contact, index + 1, CONTACTS.size())
+	run_state.record_evidence("STATION", String(contact.id),
+		"Carrier allocated. Operator has not verified a caller.",
+		String(contact.channel))
 	if index == 0:
 		# First contact deliberately teaches the dial with an exact allocation.
 		run_state.append_log("[STATION] Training allocation: %.2f MHz. Tune and find the voice." % contact.frequency)
@@ -164,6 +168,9 @@ func request_authentication() -> void:
 		return
 	auth_requested = true
 	run_state.append_log("[OPERATOR] Challenge %s broadcast." % String(contact.challenge_id))
+	run_state.record_evidence("OPERATOR", String(contact.id),
+		"Authentication challenge %s broadcast; response is not identity proof." % String(contact.challenge_id),
+		String(contact.channel))
 	var answer := contact.authentication_line
 	var auth_line_id := "%s_AUTH" % String(contact.id)
 	if contact.actual_source == &"GHOST":
@@ -185,11 +192,16 @@ func decide(action: StringName) -> void:
 		return
 	_set_phase("DECIDING")
 	run_state.decisions[String(contact.id)] = String(action)
+	run_state.record_evidence("DECISION", String(contact.id),
+		"Operator sent %s to the claimant. No automatic identity verdict." % String(action),
+		String(contact.channel), String(contact.claimed_callsign))
+	var before_locations := run_state.agent_locations.duplicate()
 	run_state.append_log("[OPERATOR] %s sent to %s." % [String(action), String(contact.claimed_callsign)])
 	var effects: Variant = contact.action_outcomes.get(String(action), PackedStringArray())
 	if effects is PackedStringArray or effects is Array:
 		for effect in effects:
 			run_state.apply_effect(String(effect))
+	_record_field_changes(before_locations)
 	_resolve_contact(contact.consequence_for(action))
 
 func quarantine_current() -> void:
@@ -201,10 +213,24 @@ func quarantine_current() -> void:
 		return
 	_set_phase("DECIDING")
 	run_state.decisions[String(contact.id)] = "QUARANTINE"
+	run_state.record_evidence("DECISION", String(contact.id),
+		"Operator permanently sealed carrier channel %s." % String(contact.channel),
+		String(contact.channel))
+	var before_locations := run_state.agent_locations.duplicate()
 	for effect in contact.quarantine_outcomes:
 		run_state.apply_effect(effect)
 	run_state.append_log("[OPERATOR] Permanently sealed %s." % String(contact.channel))
+	_record_field_changes(before_locations)
 	_resolve_contact(contact.quarantine_consequence)
+
+func _record_field_changes(before_locations: Dictionary) -> void:
+	# These are changes to the independent field map, not caller claims.
+	for callsign in run_state.agent_locations.keys():
+		if str(before_locations.get(callsign, "")) != str(run_state.agent_locations[callsign]):
+			run_state.record_evidence("FIELD", String(contact.id),
+				"Field map read-back revised: %s -> %s." % [
+					str(before_locations.get(callsign, "UNKNOWN")), str(run_state.agent_locations[callsign])
+				], "", str(callsign))
 
 func _resolve_contact(consequence: String) -> void:
 	if contact.unlock_quarantine_after:
@@ -213,6 +239,8 @@ func _resolve_contact(consequence: String) -> void:
 	_set_phase("RESOLVING")
 	consequence_emitted.emit(consequence)
 	run_state.append_log("[STATION] " + consequence)
+	run_state.record_evidence("STATION", String(contact.id),
+		"Recorded field consequence: " + consequence, String(contact.channel))
 	if not run_state.save_checkpoint(index + 1):
 		push_warning("Campaign checkpoint could not be saved after %s." % String(contact.id))
 
@@ -225,6 +253,16 @@ func _emit_message(speaker: String, message: String, line_id: String) -> void:
 		"speaker": speaker, "authored": message, "line_id": line_id, "tier": tier
 	})
 	run_state.append_log("[%s] %s" % [speaker, received])
+	var is_parallel := line_id.ends_with("_PARALLEL")
+	var claimed_location := ""
+	# The authored "last reported" field is a caller report, never independent proof.
+	if not is_parallel and (line_id.contains("_OPEN") or line_id.ends_with("_REPEAT")):
+		claimed_location = contact.last_reported_location
+	var channel_label := String(contact.channel)
+	if is_parallel:
+		channel_label = "%.2f MHz / PARALLEL CARRIER" % contact.parallel_frequency
+	run_state.record_evidence("TRANSMISSION", String(contact.id),
+		"[%s] %s" % [line_id, received], channel_label, speaker, claimed_location)
 	message_emitted.emit(speaker, received, line_id)
 
 func full_transcript_for(line_id: String) -> String:
@@ -245,7 +283,9 @@ func _on_quality_changed(_value: float) -> void:
 		record["tier"] = tier
 		var line_id := String(record["line_id"])
 		var clearer := radio.render_transcript(String(record["authored"]), line_id)
-		run_state.append_log("[RX RECOVERED / %s] %s" % [line_id, clearer])
+			run_state.append_log("[RX RECOVERED / %s] %s" % [line_id, clearer])
+		run_state.record_evidence("STATION", String(contact.id),
+			"Recovered reception for %s: %s" % [line_id, clearer], String(contact.channel))
 		transcript_refined.emit(String(record["speaker"]), clearer, line_id)
 
 func _set_phase(next_phase: String) -> void:
