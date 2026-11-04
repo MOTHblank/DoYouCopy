@@ -239,6 +239,7 @@ func _build_ui() -> void:
 	tabs.add_item("FIELD MAP")
 	tabs.add_item("COMMS LOG")
 	tabs.add_item("RECONSTRUCTION")
+	tabs.select(0)
 	right.add_child(tabs)
 	tabs.item_selected.connect(func(_index: int) -> void: _update_evidence())
 
@@ -263,6 +264,8 @@ func _build_ui() -> void:
 	for kind in ScenarioState.ANNOTATION_KINDS:
 		annotation_kind.add_item(kind)
 	annotation_row.add_child(annotation_kind)
+	annotation_station.select(0)
+	annotation_kind.select(0)
 	annotation_note = LineEdit.new()
 	annotation_note.placeholder_text = "Your hypothesis (140 characters maximum)"
 	annotation_note.max_length = 140
@@ -280,6 +283,7 @@ func _build_ui() -> void:
 	timeline_filter.add_item("TRANSMISSIONS")
 	timeline_filter.add_item("OPERATOR ACTIONS")
 	timeline_filter.add_item("FIELD / STATION RECORDS")
+	timeline_filter.select(0)
 	right.add_child(timeline_filter)
 	timeline_filter.item_selected.connect(func(_index: int) -> void: _update_evidence())
 	full_subtitles = CheckBox.new()
@@ -600,7 +604,7 @@ func _reconstruction_text() -> String:
 					continue
 		var seconds := maxi(0, int(float(event["time"])))
 		lines.append("#%03d  +%02d:%02d  /  %s  /  %s" % [
-			int(event["seq"]), seconds / 60, seconds % 60,
+			int(event["seq"]), floori(float(seconds) / 60.0), seconds % 60,
 			str(event["contact"]) if not str(event["contact"]).is_empty() else "SHIFT", kind
 		])
 		var channel := str(event["channel"])
@@ -610,7 +614,7 @@ func _reconstruction_text() -> String:
 		if not caller.is_empty():
 			lines.append("  Stated identity: " + caller + " (NOT VERIFIED)")
 		if not str(event["claimed"]).is_empty():
-			lines.append("  Caller-reported place: " + str(event["claimed"]) + " [UNVERIFIED]")
+			lines.append("  Contact brief / last reported place: " + str(event["claimed"]) + " [NOT CONFIRMED]")
 		if not str(event["verified"]).is_empty():
 			lines.append("  Independent field record at this moment: " + str(event["verified"]))
 		lines.append("  " + str(event["statement"]))
