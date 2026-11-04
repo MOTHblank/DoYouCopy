@@ -178,6 +178,7 @@ func update_station(contact: ContactDefinition, state_node: ScenarioState, radio
 	spectrum.set_signal(radio_node.frequency, contact.frequency, radio_node.quality, radio_node.blocked, phantom)
 	terminal.set_data(contact, state_node, radio_node, receiving)
 	field_map.update_verified_positions(state_node.agent_locations, state_node.agent_status)
+	field_map.set_annotations(state_node.map_annotations)
 	if frequency_readout != null:
 		frequency_readout.text = "%.2f MHz / %02d%%" % [radio_node.frequency, roundi(radio_node.quality * 100.0)]
 	if ceiling_light != null:
