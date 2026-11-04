@@ -11,6 +11,17 @@ var knowledge_history: Array[String] = []
 var flags: Dictionary = {}
 var decisions: Dictionary = {}
 var communication_log: Array[String] = []
+## Player-facing evidence is a chronology of observations, NOT a truth oracle.
+var evidence_events: Array[Dictionary] = []
+var map_annotations: Array[Dictionary] = []
+var evidence_sequence: int = 0
+var annotation_sequence: int = 0
+var elapsed_base_seconds: float = 0.0
+var shift_started_ms: int = 0
+
+const MAP_STATIONS := ["Relay", "Junction", "Pump Station B", "East Service"]
+const ANNOTATION_KINDS := ["SUSPECTED POSITION", "POSSIBLE ORIGIN", "ESCAPE ROUTE"]
+const EVIDENCE_KINDS := ["TRANSMISSION", "STATION", "OPERATOR", "DECISION", "FIELD"]
 var exposure_count: int = 0
 var quarantine_count: int = 0
 
@@ -26,6 +37,68 @@ const SAVE_BACKUP_PATH := "user://campaign_save.bak"
 ## In-flight generations remain readable if a rename or backup replacement fails.
 const SAVE_ROTATION_PATH := "user://campaign_save.rotating"
 const SAVE_BACKUP_TEMP_PATH := "user://campaign_save.bak.tmp"
+
+func reset_run() -> void:
+	# A new shift starts from the first independently recorded field positions.
+	agent_locations = {"ECHO-ACTUAL": "Relay", "ECHO-2": "Pump Station B"}
+	agent_status = {"ECHO-ACTUAL": "AVAILABLE", "ECHO-2": "AVAILABLE"}
+	trust = {"ECHO-ACTUAL": 0, "ECHO-2": 0}
+	quarantined_channels.clear()
+	ghost_knowledge.clear()
+	knowledge_history.clear()
+	flags.clear()
+	decisions.clear()
+	communication_log.clear()
+	evidence_events.clear()
+	map_annotations.clear()
+	evidence_sequence = 0
+	annotation_sequence = 0
+	elapsed_base_seconds = 0.0
+	shift_started_ms = Time.get_ticks_msec()
+	exposure_count = 0
+	quarantine_count = 0
+
+func shift_seconds() -> float:
+	return elapsed_base_seconds + maxf(0.0, float(Time.get_ticks_msec() - shift_started_ms) / 1000.0)
+
+func record_evidence(kind: String, contact_id: String, message: String,
+		channel: String = "", callsign: String = "", claimed: String = "") -> void:
+	if not EVIDENCE_KINDS.has(kind):
+		return
+	evidence_sequence += 1
+	# Verified positions come ONLY from the field map, never from terminal sync,
+	# contact.actual_source, ghost learning, or claimed transmissions.
+	var independently_recorded := ""
+	if agent_locations.has(callsign):
+		independently_recorded = str(agent_locations[callsign])
+	evidence_events.append({
+		"seq": evidence_sequence, "time": shift_seconds(), "contact": contact_id,
+		"kind": kind, "channel": channel, "callsign": callsign,
+		"statement": message.substr(0, 2000), "claimed": claimed.substr(0, 240),
+		"verified": independently_recorded
+	})
+	if evidence_events.size() > 250:
+		evidence_events.pop_front()
+
+func add_annotation(station: String, kind: String, note: String, contact_id: String) -> int:
+	var clean_note := note.strip_edges()
+	if not MAP_STATIONS.has(station) or not ANNOTATION_KINDS.has(kind):
+		return -1
+	if clean_note.is_empty() or clean_note.length() > 140 or map_annotations.size() >= 32:
+		return -1
+	annotation_sequence += 1
+	map_annotations.append({
+		"id": annotation_sequence, "station": station, "kind": kind,
+		"note": clean_note, "contact": contact_id
+	})
+	return annotation_sequence
+
+func remove_annotation(annotation_id: int) -> bool:
+	for i in range(map_annotations.size()):
+		if int(map_annotations[i]["id"]) == annotation_id:
+			map_annotations.remove_at(i)
+			return true
+	return false
 
 func _valid_integer(value: Variant, minimum: int, maximum: int) -> bool:
 	if value is int:
@@ -71,6 +144,52 @@ func _valid_snapshot(data: Dictionary) -> bool:
 		for entry in data[field]:
 			if not (entry is String):
 				return false
+	# Optional additions to v1 preserve previously saved completed-contact checkpoints.
+	if not (data.get("evidence_events", []) is Array) or not (data.get("map_annotations", []) is Array):
+		return false
+	if not _valid_integer(data.get("evidence_sequence", 0), 0, 100000):
+		return false
+	if not _valid_integer(data.get("annotation_sequence", 0), 0, 100000):
+		return false
+	var elapsed: Variant = data.get("elapsed_seconds", 0.0)
+	if not (elapsed is int or elapsed is float) or not is_finite(float(elapsed)) or float(elapsed) < 0.0 or float(elapsed) > 10000000.0:
+		return false
+	if data.get("evidence_events", []).size() > 250 or data.get("map_annotations", []).size() > 32:
+		return false
+	var last_seq := 0
+	for entry in data.get("evidence_events", []):
+		if not (entry is Dictionary):
+			return false
+		if not _valid_integer(entry.get("seq"), last_seq + 1, 100000):
+			return false
+		last_seq = int(entry["seq"])
+		if not (entry.get("kind") is String) or not EVIDENCE_KINDS.has(entry["kind"]):
+			return false
+		for key in ["contact", "channel", "callsign", "statement", "claimed", "verified"]:
+			if not (entry.get(key) is String) or String(entry[key]).length() > 2000:
+				return false
+		var event_time: Variant = entry.get("time")
+		if not (event_time is int or event_time is float) or not is_finite(float(event_time)) or float(event_time) < 0.0 or float(event_time) > 10000000.0:
+			return false
+	if int(data.get("evidence_sequence", 0)) < last_seq:
+		return false
+	var max_annotation_id := 0
+	for note in data.get("map_annotations", []):
+		if not (note is Dictionary):
+			return false
+		if not _valid_integer(note.get("id"), 1, 100000):
+			return false
+		max_annotation_id = maxi(max_annotation_id, int(note["id"]))
+		if not (note.get("station") is String) or not MAP_STATIONS.has(note["station"]):
+			return false
+		if not (note.get("kind") is String) or not ANNOTATION_KINDS.has(note["kind"]):
+			return false
+		if not (note.get("note") is String) or String(note["note"]).is_empty() or String(note["note"]).length() > 140:
+			return false
+		if not (note.get("contact") is String) or String(note["contact"]).length() > 32:
+			return false
+	if int(data.get("annotation_sequence", 0)) < max_annotation_id:
+		return false
 	if not _valid_integer(data.get("exposure"), 0, 100000):
 		return false
 	if not _valid_integer(data.get("quarantines"), 0, 2):
@@ -281,6 +400,12 @@ func restore_snapshot(data: Dictionary) -> bool:
 		for entry_index in range(first, raw_log.size()):
 			communication_log.append(str(raw_log[entry_index]))
 
+	evidence_events = (data.get("evidence_events", []) as Array).duplicate(true)
+	map_annotations = (data.get("map_annotations", []) as Array).duplicate(true)
+	evidence_sequence = int(data.get("evidence_sequence", 0))
+	annotation_sequence = int(data.get("annotation_sequence", 0))
+	elapsed_base_seconds = float(data.get("elapsed_seconds", 0.0))
+	shift_started_ms = Time.get_ticks_msec()
 	exposure_count = maxi(0, int(data.get("exposure", 0)))
 	quarantine_count = clampi(int(data.get("quarantines", quarantined_channels.size())), 0, 2)
 	return true
@@ -378,6 +503,11 @@ func snapshot() -> Dictionary:
 		"flags": flags.duplicate(true),
 		"decisions": decisions.duplicate(true),
 		"communication_log": communication_log.duplicate(),
+		"evidence_events": evidence_events.duplicate(true),
+		"map_annotations": map_annotations.duplicate(true),
+		"evidence_sequence": evidence_sequence,
+		"annotation_sequence": annotation_sequence,
+		"elapsed_seconds": shift_seconds(),
 		"exposure": exposure_count,
 		"quarantines": quarantine_count
 	}
