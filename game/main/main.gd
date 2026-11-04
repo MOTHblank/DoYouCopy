@@ -78,4 +78,4 @@ func _ready() -> void:
 
 func _sync_screens() -> void:
 	if director.contact != null:
-		room.update_station(director.contact, run_state, radio, director.phase == "VERIFYING" or director.phase == "RESOLVING")
+		room.update_station(director.contact, run_state, radio, director.phase == "RECEIVING" or director.phase == "VERIFYING" or director.phase == "RESOLVING")
