@@ -26,6 +26,11 @@ func _ready() -> void:
 	player.station_object_selected.connect(hud.show_station_object)
 	player.station_control_adjusted.connect(hud.adjust_station)
 	hud.action_transmitted.connect(player.animate_station_action)
+	hud.annotations_changed.connect(_sync_screens)
+	hud.terminal_scroll_requested.connect(func(pixels: int) -> void:
+		if room.terminal != null:
+			room.terminal.scroll_by(pixels)
+	)
 	hud.opening_skip_requested.connect(func() -> void:
 		if director.phase == "RECEIVING":
 			radio_voice.stop_all()
@@ -52,10 +57,15 @@ func _ready() -> void:
 	director.phase_changed.connect(func(_phase: String) -> void: _sync_screens())
 	director.message_emitted.connect(func(_speaker: String, _line: String, id: String) -> void:
 		radio_voice.enqueue(id, radio.quality)
+		_sync_screens()
 		if id.contains("_AUTH"):
 			station_audio.cue("auth")
 	)
+	director.transcript_refined.connect(func(_speaker: String, _line: String, _id: String) -> void:
+		_sync_screens()
+	)
 	director.consequence_emitted.connect(func(_line: String) -> void:
+		_sync_screens()
 		radio_voice.stop_all()
 		station_audio.cue("decision")
 	)
