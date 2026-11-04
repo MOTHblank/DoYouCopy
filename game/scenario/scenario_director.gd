@@ -92,6 +92,9 @@ func advance() -> void:
 	if contact.terminal_anomaly and run_state.knows("station_terminal_sync"):
 		run_state.flags["terminal_unreliable"] = true
 		run_state.append_log("[STATION] Data sync completed. Terminal location index refreshed.")
+		run_state.record_evidence("STATION", String(contact.id),
+			"Terminal reports a location-index sync; paper map remains separate.",
+			String(contact.channel))
 	radio.configure(contact, false)
 
 func _eligible(candidate: ContactDefinition) -> bool:
@@ -146,6 +149,8 @@ func _on_signal_lost() -> void:
 		return
 	reception_lines.clear()
 	run_state.append_log("[STATION] Signal lost. Retune before transmitting.")
+	run_state.record_evidence("STATION", String(contact.id),
+		"Carrier lost; operator must retune.", String(contact.channel))
 	_set_phase("TUNING")
 
 func request_repeat() -> void:
@@ -237,10 +242,10 @@ func _resolve_contact(consequence: String) -> void:
 		run_state.flags["quarantine_available"] = true
 		run_state.append_log("[STATION] Quarantine guard released. Irreversible channel lock is available.")
 	_set_phase("RESOLVING")
-	consequence_emitted.emit(consequence)
 	run_state.append_log("[STATION] " + consequence)
 	run_state.record_evidence("STATION", String(contact.id),
 		"Recorded field consequence: " + consequence, String(contact.channel))
+	consequence_emitted.emit(consequence)
 	if not run_state.save_checkpoint(index + 1):
 		push_warning("Campaign checkpoint could not be saved after %s." % String(contact.id))
 
@@ -255,7 +260,7 @@ func _emit_message(speaker: String, message: String, line_id: String) -> void:
 	run_state.append_log("[%s] %s" % [speaker, received])
 	var is_parallel := line_id.ends_with("_PARALLEL")
 	var claimed_location := ""
-	# The authored "last reported" field is a caller report, never independent proof.
+	# The contact brief lists a last-reported site; it may differ from spoken words.
 	if not is_parallel and (line_id.contains("_OPEN") or line_id.ends_with("_REPEAT")):
 		claimed_location = contact.last_reported_location
 	var channel_label := String(contact.channel)
