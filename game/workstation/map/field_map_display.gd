@@ -10,6 +10,12 @@ const STATIONS := {
 }
 var verified_locations: Dictionary = {}
 var field_status: Dictionary = {}
+## Separate operator hypotheses; these NEVER participate in verified position rendering.
+var annotations: Array[Dictionary] = []
+
+func set_annotations(notes: Array[Dictionary]) -> void:
+	annotations = notes.duplicate(true)
+	queue_redraw()
 
 func update_verified_positions(locations: Dictionary, statuses: Dictionary) -> void:
 	verified_locations = locations.duplicate()
@@ -40,4 +46,19 @@ func _draw() -> void:
 		draw_circle(point + shift, 10.0, color)
 		var suffix := "*" if str(field_status.get(callsign, "")) != "AVAILABLE" else ""
 		draw_string(font, point + shift + Vector2(15, 5), ("A" if callsign == "ECHO-ACTUAL" else "2") + suffix, HORIZONTAL_ALIGNMENT_LEFT, -1, 19, color)
-	draw_string(font, Vector2(30, size.y - 18), "Only operator-confirmed movements update these positions.", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#65756c"))
+	# Amber hollow diamonds denote player hypotheses, not agent markers.
+	for station in STATIONS.keys():
+		var count := 0
+		for note in annotations:
+			if str(note.get("station", "")) == station:
+				count += 1
+		if count == 0:
+			continue
+		var base: Vector2 = STATIONS[station] + Vector2(-29, 27)
+		var caution := Color("#9a782c")
+		for edge in range(4):
+			var from_point := base + Vector2.RIGHT.rotated(float(edge) * PI * 0.5) * 11.0
+			var to_point := base + Vector2.RIGHT.rotated(float(edge + 1) * PI * 0.5) * 11.0
+			draw_line(from_point, to_point, caution, 2.0)
+		draw_string(font, base + Vector2(14, 7), "?%d" % count, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, caution)
+	draw_string(font, Vector2(30, size.y - 18), "SOLID = FIELD RECORD    ? = OPERATOR THEORY (UNVERIFIED)", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#65756c"))
