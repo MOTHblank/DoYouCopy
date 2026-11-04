@@ -14,7 +14,10 @@ The GitHub main branch contains a Godot 4.7 project with eight authored major ra
 - **Space / Enter / microphone**: send the selected instruction once the incoming message is complete. During RECEIVING, **Space / Enter** skips the preview recording; its full text remains in the communication log. The operator arm reaches for the microphone. The lower-left controls provide the same interaction without pixel-perfect 3D targeting.
 - **Q**: request quarantine after the safety guard unlocks. A **confirmation dialog** shows the channel and whether a real agent relies on it. Up to two channels can be sealed; this cannot be undone.
 - **Enter**: advance after a consequence; restart from the ending report.
-- **Reference desk**: terminal, staged authentication sheets, verified map, and a communication log remain independently inspectable. The wall map is also drawn in code with verified agent positions.
+- **Reference desk**: terminal, staged authentication sheets, verified map, communication log, and chronological reconstruction remain inspectable independently. The wall map is drawn with recorded field positions and distinct unverified operator marks.
+- **RECONSTRUCTION tab**: view received transmissions, the contact brief's last-reported location, the independent field-map position as recorded at that moment, timed station events, and the decisions/consequences that followed. Use the filter above the record; it never labels a caller as true or false.
+- **FIELD MAP tab**: choose a station and a hypothesis type (suspected position, possible origin, or escape route), write a short note, and add or remove it. Amber hollow marks on the physical map represent these hypotheses; they cannot change an agent's position.
+- **TERMINAL tab**: displays full mission objectives and previous received transmissions. Use the MONITOR PAGE buttons (or Page Up/Page Down while this tab is selected) to scroll the in-room terminal display.
 
 ## Eight-contact campaign (design spoilers)
 
@@ -33,7 +36,7 @@ If C07's A-ALT channel was sealed, C08 still takes place on A-PRIMARY. A second 
 
 - `ContactDefinition`: stable IDs, authored voice lines, secondary carriers, rule-gated phrases, conditional openings, operational outcomes, and anomaly flags.
 - `ScenarioDirector`: interaction lifecycle and contact eligibility. Acquiring a signal, repeating a line, challenging identity, deciding and quarantining are explicit events.
-- `ScenarioState`: verified field positions, asymmetric agent statuses/trust, permanent channel seals, bounded GHOST knowledge with provenance, flags, operator choices, and ending resolution.
+- `ScenarioState`: verified field positions, asymmetric agent statuses/trust, permanent channel seals, bounded GHOST knowledge with provenance, flags, operator choices, and ending resolution. Its player-facing evidence chronology stores elapsed shift timestamps, channel/callsign claims, the independent field record at reception, actions, and outcomes. Player map notes are stored separately from the authoritative positions; both are restored from completed-contact checkpoints. Earlier v1 checkpoints without these optional fields remain readable.
 - `RadioConsole`: frequency and signal cleanup only. It does not know whether a caller is authentic.
 - `WorkstationHUD`: readable diegetic reference and controls. The terminal can present a false *synchronized* location; the reference map continues to show the real verified location.
 - `WorkstationRoom`: procedural office, projected spectrum/terminal/map displays, physical radio knobs, response keys, protected quarantine control, and subtly changing workstation lighting.
